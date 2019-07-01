@@ -6,7 +6,7 @@ import Html.Attributes as Attrs exposing (value, placeholder)
 import Html.Events exposing (onClick, onInput)
 
 import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions)
-import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer)
+import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard)
 import Hanabi.MVC.Core exposing (..)
 
 
@@ -35,18 +35,55 @@ view model =
                         [ if nMoves > 0 then button [onClick <| SetFreezeFrame <| Just (nMoves-1)] [text "<"] else text ""
                         , text <| "Time step " ++ (String.fromInt (nMoves+1)) ++ "/" ++ (String.fromInt <| List.length history.moves + 1 )
                         , if nMoves < List.length history.moves then button [onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"] else text ""
-                        , if not (isNothing freezeFrame) then button [onClick <| SetFreezeFrame Nothing] [text "unfreeze"] else text ""
+                        , if not (isNothing freezeFrame) then button [onClick <| SetFreezeFrame Nothing] [text "Unfreeze"] else text ""
                         ]
                     , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
                     , text "Moves:"
                     , decisions effectiveHistory
                       |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Context"]
-                                                             , text <| currentPlayer g ++ " -- " ++ Debug.toString m
+                                                             , text <| " " ++ currentPlayer g ++ " "
+                                                             , viewMove player g m
                                                              ]
                                          )
                       |> List.reverse
                       |> ul []
                     ]
+
+conciseHand : GameState -> Player -> String
+conciseHand g p =
+    g.hands
+    |> Dict.get p
+    |> Maybe.withDefault Dict.empty
+    |> Dict.values
+    |> List.map cardKey
+    |> String.join ", "
+
+viewMove : Player -> GameState -> Move -> Html a
+viewMove viewer g m =
+    let
+        active = currentPlayer g
+    in
+        case m of
+            HintColor p c ->
+                text <| "hinted "
+                        ++ p
+                        ++ (if p /= viewer then " (holding " ++ conciseHand g p ++ ")" else "")
+                        ++ ": " ++ c
+            HintRank p r ->
+                text <| "hinted "
+                        ++ p
+                        ++ (if p /= viewer then " (holding " ++ conciseHand g p ++ ")" else "")
+                        ++ ": " ++ String.fromInt r
+            Play posn ->
+                text <| "played "
+                        ++ posn
+                        ++ " (" ++ (getCard g active posn |> Maybe.withDefault (Card "" 0) |> cardKey) ++ ")"
+                        ++ (if active /= viewer then " (out of " ++ conciseHand g active ++ ")" else "")
+            Discard posn ->
+                text <| "discarded "
+                        ++ posn
+                        ++ " (" ++ (getCard g active posn |> Maybe.withDefault (Card "" 0) |> cardKey) ++ ")"
+                        ++ (if active /= viewer then " (out of " ++ conciseHand g active ++ ")" else "")
 
 cardKey : Card -> String
 cardKey {color, rank} = color ++ String.fromInt rank
