@@ -185,7 +185,7 @@ step move game =
             Play i ->
                 draw active i <|
                     let
-                        card = case game.hands |> Dict.get active |> Maybe.andThen (Dict.get i) of
+                        card = case getCard game active i of
                             Nothing -> Debug.todo "no such card!?"
                             Just c -> c
                         isMatch = card.rank == 1 + (game.towers |> Dict.get card.color |> Maybe.withDefault 0)
@@ -200,6 +200,49 @@ step move game =
             HintColor p c -> { game | nHints = game.nHints - 1 }
             HintRank p c -> { game | nHints = game.nHints - 1 }
 
+-------------------------------------------------------------------
+-- ASSISTANCE
+
+decisions : History -> List (GameState, Move)
+decisions history =
+    case history.moves of
+        [] -> []
+        m :: ms -> (history.init, m) :: decisions {init=step m history.init, moves=ms}
+
+type alias AggregatedHints = { colors: List Color, ranks : List Rank }
+
+noInformation : AggregatedHints
+noInformation = { colors=colors, ranks=ranks }
+
+getCard : GameState -> Player -> CardPosition -> Maybe Card
+getCard g p i = g.hands |> Dict.get p |> Maybe.andThen (Dict.get i)
+
+aggregateHints : History -> Player -> CardPosition -> AggregatedHints
+aggregateHints history player posn =
+    let
+        aggregate : (GameState, Move) -> AggregatedHints -> AggregatedHints
+        aggregate (game, move) agg =
+            case move of
+                Play i -> if (currentPlayer game == player) && i == posn then noInformation else agg
+                Discard i -> if (currentPlayer game == player) && i == posn then noInformation else agg
+                HintColor p c ->
+                    if p==player then
+                        if Just c == (getCard game player posn |> Maybe.map .color) then
+                            { agg | colors = [c] }
+                        else
+                            { agg | colors = agg.colors |> List.filter (\c2 -> c2 /= c) }
+                    else
+                        agg
+                HintRank p r ->
+                    if p==player then
+                        if Just r == (getCard game player posn |> Maybe.map .rank) then
+                            { agg | ranks = [r] }
+                        else
+                            { agg | ranks = agg.ranks |> List.filter (\r2 -> r2 /= r) }
+                    else
+                        agg
+    in
+        List.foldl aggregate noInformation (decisions history)
 
 -------------------------------------------------------------------
 -- MVC
@@ -292,6 +335,7 @@ update msg model =
                     , expect = Http.expectWhatever (always MadeMove)
                     }
                 )
+        (Playing state, MadeMove) -> (Playing state, Cmd.none)
 
         (a, b) ->
             Debug.todo (Debug.toString ("unhandled message", a, b))
@@ -313,8 +357,8 @@ view model =
         Playing {player, history, freezeFrame} ->
             let
                 nMoves = freezeFrame |> Maybe.withDefault (List.length history.moves)
-                moves = List.take nMoves history.moves
-                game = moves |> List.foldl step history.init
+                effectiveHistory = { history | moves = List.take nMoves history.moves}
+                game = run effectiveHistory
             in
                 div []
                     [ div []
@@ -323,12 +367,12 @@ view model =
                         , if nMoves < List.length history.moves then button [onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"] else text ""
                         , if not (isNothing freezeFrame) then button [onClick <| SetFreezeFrame Nothing] [text "unfreeze"] else text ""
                         ]
-                    , viewGame (isNothing freezeFrame && player == currentPlayer game) player game
+                    , viewGame (isNothing freezeFrame && player == currentPlayer game) player history
                     , text "Moves:"
-                    , moves
-                      |> List.indexedMap (\i m -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Rewind"]
-                                                        , text <| Debug.toString m
-                                                        ]
+                    , decisions effectiveHistory
+                      |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Rewind"]
+                                                             , text <| currentPlayer g ++ " -- " ++ Debug.toString m
+                                                             ]
                                          )
                       |> List.reverse
                       |> ul []
@@ -337,35 +381,53 @@ view model =
 cardKey : Card -> String
 cardKey {color, rank} = color ++ String.fromInt rank
 
-viewOwnHand : GameState -> Bool -> Player -> Html Msg
-viewOwnHand game interactive player =
-    Dict.get player game.hands
+run : History -> GameState
+run history = List.foldl step history.init history.moves
+
+viewAggregatedHints : AggregatedHints -> Html a
+viewAggregatedHints hints =
+    let
+        c = hints.colors |> List.sort |> String.join ""
+        r = hints.ranks |> List.sort |> List.map String.fromInt |> String.join ""
+    in
+        text <| "(" ++ c ++ "," ++ r ++ ")"
+
+viewOwnHand : History -> Bool -> Player -> Html Msg
+viewOwnHand history interactive player =
+    Dict.get player (run history).hands
     |> Maybe.withDefault Dict.empty
     |> Dict.toList
-    |> List.map (\(pos, card) ->
+    |> List.map (\(posn, card) ->
         li []
-            [ text pos
-            , if interactive then button [onClick <| MakeMove <| Discard pos] [text "Discard"] else text ""
-            , if interactive then button [onClick <| MakeMove <| Play pos] [text "Play"] else text ""
+            [ text posn
+            , viewAggregatedHints (aggregateHints history player posn)
+            , if interactive then button [onClick <| MakeMove <| Discard posn] [text "Discard"] else text ""
+            , if interactive then button [onClick <| MakeMove <| Play posn] [text "Play"] else text ""
             ]
         )
     |> ul []
 
-viewOtherHand : GameState -> Bool -> Player -> Hand -> Html Msg
-viewOtherHand game interactive player hand =
+viewOtherHand : History -> Bool -> Player -> Hand -> Html Msg
+viewOtherHand history interactive player hand =
     let
+        game = run history
         elem : CardPosition -> Html Msg
         elem posn =
             case Dict.get posn hand of
                 Nothing -> text "__"
                 Just card ->
-                    if interactive && game.nHints > 0 then
-                        span []
-                            [ button [onClick <| MakeMove <| HintColor player card.color] [text card.color]
-                            , button [onClick <| MakeMove <| HintRank player card.rank] [text <| String.fromInt card.rank]
-                            ]
-                    else
-                        text (card.color ++ String.fromInt card.rank)
+                    let
+                        cardRepr : Html Msg
+                        cardRepr =
+                            if interactive && game.nHints > 0 then
+                                span []
+                                    [ button [onClick <| MakeMove <| HintColor player card.color] [text card.color]
+                                    , button [onClick <| MakeMove <| HintRank player card.rank] [text <| String.fromInt card.rank]
+                                    ]
+                            else
+                                text (card.color ++ String.fromInt card.rank)
+                    in
+                        span [] [cardRepr, viewAggregatedHints (aggregateHints history player posn)]
     in
         posns
         |> List.map elem
@@ -379,22 +441,25 @@ isNothing x = case x of
     Nothing -> True
     Just _ -> False
 
-viewGame : Bool -> Player -> GameState -> Html Msg
-viewGame interactive viewer game =
-    ul []
-        [ text <| (if isOver game then "Game over. " else "") ++ "Score " ++ String.fromInt (score game)
-        , li [] [text (String.fromInt game.nFuses ++ " fuses, "
-                       ++ String.fromInt game.nHints ++ " hints. "
-                       ++ "Turn order: " ++ String.join ", " game.players
-                       )]
-        , li [] [game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
-        , li [] [text "Your hand:", viewOwnHand game interactive viewer]
-        , li [] [text "Other hands:", game.hands
-                                      |> Dict.remove viewer
-                                      |> Dict.toList
-                                      |> List.map (\(player, hand) -> li [] [text (player ++ ": "), viewOtherHand game interactive player hand])
-                                      |> ul []]
-        , li [] [text "Unseen cards:", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
-        ]
+viewGame : Bool -> Player -> History -> Html Msg
+viewGame interactive viewer history =
+    let
+        game = run history
+    in
+        ul []
+            [ text <| (if isOver game then "Game over. " else "") ++ "Score " ++ String.fromInt (score game)
+            , li [] [text (String.fromInt game.nFuses ++ " fuses, "
+                           ++ String.fromInt game.nHints ++ " hints. "
+                           ++ "Turn order: " ++ String.join ", " game.players
+                           )]
+            , li [] [game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
+            , li [] [text "Your hand:", viewOwnHand history interactive viewer]
+            , li [] [text "Other hands:", game.hands
+                                          |> Dict.remove viewer
+                                          |> Dict.toList
+                                          |> List.map (\(player, hand) -> li [] [text (player ++ ": "), viewOtherHand history interactive player hand])
+                                          |> ul []]
+            , li [] [text "Unseen cards:", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
+            ]
 
 main = Browser.element {init=init, update=update, view=view, subscriptions=(always Sub.none)}
