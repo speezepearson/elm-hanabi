@@ -9,22 +9,6 @@ import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (GameState, Move(..), Hand, Card)
 import Hanabi.MVC.Core exposing (GameId, Msg(..))
 
-postNewGame : GameId -> GameState -> Cmd Msg
-postNewGame id game =
-    Http.post
-        { url = "/states/" ++ id
-        , body = Http.jsonBody <| E.object [("old", E.null), ("new", encodeHistory {init=game, moves=[]})]
-        , expect = Http.expectJson NewGamePosted (D.field "current_state" historyDecoder)
-        }
-
-pollForHistory : GameId -> History -> Cmd Msg
-pollForHistory id history =
-    Http.post
-        { url = "/poll/" ++ id
-        , body = Http.jsonBody <| E.object [("current_state", encodeHistory history)]
-        , expect = Http.expectJson SetHistory (D.field "current_state" historyDecoder)
-        }
-
 encodeCard : Card -> E.Value
 encodeCard {color, rank} = E.object [("color", E.string color), ("rank", E.int rank)]
 cardDecoder : D.Decoder Card

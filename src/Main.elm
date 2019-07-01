@@ -1,16 +1,20 @@
 import Browser
 import Dict
-import Http
-import Json.Encode as E
-
 import Random
+
+import StateServer as SS
+import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (randomGame)
-import Hanabi.MVC.API exposing (postNewGame, pollForHistory, encodeHistory)
+import Hanabi.MVC.API exposing (encodeHistory, historyDecoder)
 import Hanabi.MVC.Core exposing (Msg(..), Model(..), init)
 import Hanabi.MVC.View exposing (view)
 
--------------------------------------------------------------------
--- MVC
+conn : SS.Connection History
+conn =
+    { encode = encodeHistory
+    , decoder= historyDecoder
+    , name = "TODO"
+    }
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -24,16 +28,19 @@ update msg model =
                 ( Creating {players=state.players}
                 , Random.generate RandomGameGenerated (randomGame players)
                 )
-        (Creating state, RandomGameGenerated g) -> (model, postNewGame "TODO" g)
-        (Creating state, NewGamePosted (Ok history)) ->
+        (Creating state, RandomGameGenerated g) ->
+            ( model
+            , SS.create SetHistory conn {init=g, moves=[]}
+            )
+        (Creating state, SetHistory (Ok history)) ->
             (ChoosingPlayer {gameId = "TODO", history = history}, Cmd.none)
-        (Creating state, NewGamePosted (Err err)) ->
+        (Creating state, SetHistory (Err err)) ->
             (Debug.log (Debug.toString err) model, Cmd.none)
 
         -- ChoosingPlayer
         (ChoosingPlayer state, SetPlayer p) ->
             ( Playing {gameId=state.gameId, player=p, history=state.history, freezeFrame=Nothing}
-            , pollForHistory state.gameId state.history
+            , SS.poll SetHistory conn state.history
             )
 
         -- Playing
@@ -44,7 +51,7 @@ update msg model =
                     Err e -> Debug.log (Debug.toString ("Error fetching history", e)) state.history
             in
                 ( Playing { state | history = history }
-                , pollForHistory state.gameId history
+                , SS.poll SetHistory conn history
                 )
         (Playing state, SetFreezeFrame t) -> (Playing { state | freezeFrame = t }, Cmd.none)
         (Playing state, MakeMove move) ->
@@ -53,11 +60,7 @@ update msg model =
                 newHistory = { oldHistory | moves = oldHistory.moves ++ [move] }
             in
                 ( Playing { state | history = newHistory }
-                , Http.post
-                    { url = "/states/" ++ state.gameId
-                    , body = Http.jsonBody (E.object [("old", encodeHistory oldHistory), ("new", encodeHistory newHistory)])
-                    , expect = Http.expectWhatever (always MadeMove)
-                    }
+                , SS.update (always MadeMove) conn oldHistory newHistory
                 )
         (Playing state, MadeMove) -> (Playing state, Cmd.none)
 
