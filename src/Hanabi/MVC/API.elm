@@ -7,7 +7,15 @@ import Json.Encode as E
 
 import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (GameState, Move(..), Hand, Card)
-import Hanabi.MVC.Core exposing (GameId, Msg(..))
+import Hanabi.MVC.Core exposing (Connection, Msg(..))
+import StateServer as SS
+
+conn : SS.Name -> Connection
+conn name =
+    { encode = encodeHistory
+    , decoder = historyDecoder
+    , name = name
+    }
 
 encodeCard : Card -> E.Value
 encodeCard {color, rank} = E.object [("color", E.string color), ("rank", E.int rank)]

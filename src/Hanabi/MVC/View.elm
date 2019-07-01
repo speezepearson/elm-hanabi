@@ -1,7 +1,7 @@
 module Hanabi.MVC.View exposing (view)
 
 import Dict
-import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b)
+import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br)
 import Html.Attributes as Attrs exposing (value, placeholder)
 import Html.Events exposing (onClick, onInput)
 
@@ -13,9 +13,13 @@ import Hanabi.MVC.Core exposing (..)
 view : Model -> Html Msg
 view model =
     case model of
-        Creating {players} ->
+        Creating {gameId, players} ->
             div []
-                [ text "Players: "
+                [ text "Game id:"
+                , input [ onInput SetGameId, value gameId, placeholder "srpplayground" ] []
+                , button [ onClick Create ] [text "Join"]
+                , br [] [], text "or", br [] []
+                , text "Players: "
                 , input [ onInput SetPlayers, value players, placeholder "Alice, Bob, Charlie" ] []
                 , button [ onClick Create ] [text "Create"]
                 ]
