@@ -1,8 +1,8 @@
 module Hanabi.MVC.View exposing (view)
 
 import Dict
-import Html exposing (Html, div, button, text, input, ul, li, span)
-import Html.Attributes exposing (value, placeholder)
+import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b)
+import Html.Attributes as Attrs exposing (value, placeholder)
 import Html.Events exposing (onClick, onInput)
 
 import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions)
@@ -54,55 +54,66 @@ cardKey {color, rank} = color ++ String.fromInt rank
 run : History -> GameState
 run history = List.foldl step history.init history.moves
 
+viewHands : Player -> Bool -> History -> Html Msg
+viewHands player interactive history =
+    let
+        headers = history.init.players |> List.map (\p -> th [] [text p])
+        cells = history.init.players |> List.map (\p -> td [] [(if p == player then viewOwnHand else viewOtherHand) history interactive player])
+    in
+        table [Attrs.attribute "border" "1px solid black"]
+            [ tr [] headers
+            , tr [] cells ]
+
+
 viewAggregatedHints : AggregatedHints -> Html a
 viewAggregatedHints hints =
     let
         c = hints.colors |> List.sort |> String.join ""
         r = hints.ranks |> List.sort |> List.map String.fromInt |> String.join ""
     in
-        text <| "(" ++ c ++ "," ++ r ++ ")"
+        text <| "(" ++ c ++ ", " ++ r ++ ")"
 
 viewOwnHand : History -> Bool -> Player -> Html Msg
 viewOwnHand history interactive player =
     Dict.get player (run history).hands
     |> Maybe.withDefault Dict.empty
     |> Dict.toList
-    |> List.map (\(posn, card) ->
-        li []
-            [ text posn
-            , viewAggregatedHints (aggregateHints history player posn)
-            , if interactive then button [onClick <| MakeMove <| Discard posn] [text "Discard"] else text ""
-            , if interactive then button [onClick <| MakeMove <| Play posn] [text "Play"] else text ""
-            ]
-        )
-    |> ul []
+    |> List.map (\(posn, card) -> tr []
+        [ td [] [ button [Attrs.disabled (not interactive), onClick <| MakeMove <| Discard posn] [text "Discard"]
+                , button [Attrs.disabled (not interactive), onClick <| MakeMove <| Play posn] [text "Play"]
+                ]
+        , td [] [viewAggregatedHints (aggregateHints history player posn)]
+        ])
+    |> (\rows -> [tr [] [th [] [text "Actions"], th [] [text "Options"]]] ++ rows)
+    |> table []
 
-viewOtherHand : History -> Bool -> Player -> Hand -> Html Msg
-viewOtherHand history interactive player hand =
+viewOtherHand : History -> Bool -> Player -> Html Msg
+viewOtherHand history interactive player =
     let
         game = run history
-        elem : CardPosition -> Html Msg
-        elem posn =
+        hand = game.hands |> Dict.get player |> Maybe.withDefault Dict.empty
+        row : CardPosition -> Html Msg
+        row posn =
             case Dict.get posn hand of
-                Nothing -> text "__"
+                Nothing -> tr [] [td [] [text "__"], td [] [text "__"]]
                 Just card ->
                     let
+                        canHint : Bool
+                        canHint = interactive && game.nHints > 0
+
                         cardRepr : Html Msg
                         cardRepr =
-                            if interactive && game.nHints > 0 then
-                                span []
-                                    [ button [onClick <| MakeMove <| HintColor player card.color] [text card.color]
-                                    , button [onClick <| MakeMove <| HintRank player card.rank] [text <| String.fromInt card.rank]
-                                    ]
-                            else
-                                text (card.color ++ String.fromInt card.rank)
+                            span []
+                                [ button [Attrs.disabled (not canHint), onClick <| MakeMove <| HintColor player card.color] [text card.color]
+                                , button [Attrs.disabled (not canHint), onClick <| MakeMove <| HintRank player card.rank] [text <| String.fromInt card.rank]
+                                ]
                     in
-                        span [] [cardRepr, viewAggregatedHints (aggregateHints history player posn)]
+                        tr [] [td [] [cardRepr], td [] [viewAggregatedHints (aggregateHints history player posn)]]
     in
         posns
-        |> List.map elem
-        |> List.intersperse (text ", ")
-        |> span []
+        |> List.map row
+        |> (\rows -> [tr [] [th [] [text "Card"], th [] [text "Options"]]] ++ rows)
+        |> table []
 
 isNothing : Maybe a -> Bool
 isNothing x = case x of
@@ -121,11 +132,6 @@ viewGame interactive viewer history =
                            ++ "Turn order: " ++ String.join ", " game.players
                            )]
             , li [] [game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
-            , li [] [text "Your hand:", viewOwnHand history interactive viewer]
-            , li [] [text "Other hands:", game.hands
-                                          |> Dict.remove viewer
-                                          |> Dict.toList
-                                          |> List.map (\(player, hand) -> li [] [text (player ++ ": "), viewOtherHand history interactive player hand])
-                                          |> ul []]
+            , viewHands viewer interactive history
             , li [] [text "Unseen cards:", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
             ]
