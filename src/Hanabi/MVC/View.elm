@@ -40,7 +40,7 @@ view model =
                     , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
                     , text "Moves:"
                     , decisions effectiveHistory
-                      |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Rewind"]
+                      |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Context"]
                                                              , text <| currentPlayer g ++ " -- " ++ Debug.toString m
                                                              ]
                                          )
@@ -57,8 +57,9 @@ run history = List.foldl step history.init history.moves
 viewHands : Player -> Bool -> History -> Html Msg
 viewHands player interactive history =
     let
-        headers = history.init.players |> List.map (\p -> th [] [text p])
-        cells = history.init.players |> List.map (\p -> td [] [(if p == player then viewOwnHand else viewOtherHand) history interactive player])
+        active = currentPlayer (run history)
+        headers = history.init.players |> List.map (\p -> th [] [text p, text (if p == active then " (active)" else "")])
+        cells = history.init.players |> List.map (\p -> td [] [(if p == player then viewOwnHand else viewOtherHand) history interactive p])
     in
         table [Attrs.attribute "border" "1px solid black"]
             [ tr [] headers
@@ -129,7 +130,6 @@ viewGame interactive viewer history =
             [ text <| (if isOver game then "Game over. " else "")
             , li [] [text (String.fromInt game.nFuses ++ " fuses, "
                            ++ String.fromInt game.nHints ++ " hints. "
-                           ++ "Turn order: " ++ String.join ", " game.players
                            )]
             , li [] [game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
             , viewHands viewer interactive history

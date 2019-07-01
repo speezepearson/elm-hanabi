@@ -73,7 +73,7 @@ initializeGame players game =
                     , deck = deck
                     }
     in
-        List.foldl drawHandFor game players
+        List.foldl drawHandFor {game | players = players} players
 
 currentPlayer : GameState -> Player
 currentPlayer game =
