@@ -32,21 +32,22 @@ view model =
             in
                 div []
                     [ div []
-                        [ if nMoves > 0 then button [onClick <| SetFreezeFrame <| Just (nMoves-1)] [text "<"] else text ""
-                        , text <| "Time step " ++ (String.fromInt (nMoves+1)) ++ "/" ++ (String.fromInt <| List.length history.moves + 1 )
-                        , if nMoves < List.length history.moves then button [onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"] else text ""
-                        , if not (isNothing freezeFrame) then button [onClick <| SetFreezeFrame Nothing] [text "Unfreeze"] else text ""
+                        [ button [Attrs.disabled <| nMoves == 0, onClick <| SetFreezeFrame <| Just (nMoves-1)] [text "<"]
+                        , text <| " Time step " ++ (String.fromInt (nMoves+1)) ++ "/" ++ (String.fromInt <| List.length history.moves + 1 ) ++ " "
+                        , button [Attrs.disabled <| nMoves == List.length history.moves, onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"]
+                        , button [Attrs.disabled <| isNothing freezeFrame, onClick <| SetFreezeFrame Nothing] [text "Unfreeze"]
                         ]
                     , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
                     , text "Moves:"
                     , decisions effectiveHistory
-                      |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Context"]
-                                                             , text <| " " ++ currentPlayer g ++ " "
-                                                             , viewMove player g m
+                      |> List.indexedMap (\i (g, m) -> tr [] [ td [] [button [onClick <| SetFreezeFrame <| Just i] [text "Context"]]
+                                                             , td [] [text <| currentPlayer g]
+                                                             , td [] [viewMove player g m]
+                                                             , td [] [button [onClick <| SetFreezeFrame <| Just (i+1)] [text "Result"]]
                                                              ]
                                          )
                       |> List.reverse
-                      |> ul []
+                      |> table [Attrs.attribute "border" "1px solid black"]
                     ]
 
 conciseHand : GameState -> Player -> String
@@ -75,7 +76,8 @@ viewMove viewer g m =
                         ++ (if p /= viewer then " (holding " ++ conciseHand g p ++ ")" else "")
                         ++ ": " ++ String.fromInt r
             Play posn ->
-                text <| "played "
+                text <| (if (step m g).towers /= g.towers then "successfully " else "unsuccessfully ")
+                        ++ "played "
                         ++ posn
                         ++ " (" ++ (getCard g active posn |> Maybe.withDefault (Card "" 0) |> cardKey) ++ ")"
                         ++ (if active /= viewer then " (out of " ++ conciseHand g active ++ ")" else "")
@@ -168,7 +170,7 @@ viewGame interactive viewer history =
             , li [] [text (String.fromInt game.nFuses ++ " fuses, "
                            ++ String.fromInt game.nHints ++ " hints. "
                            )]
-            , li [] [game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
+            , li [] [text "Towers: ", game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
             , viewHands viewer interactive history
-            , li [] [text "Unseen cards:", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
+            , li [] [text "Unseen cards: ", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
             ]
