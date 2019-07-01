@@ -37,7 +37,7 @@ view model =
                         , if nMoves < List.length history.moves then button [onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"] else text ""
                         , if not (isNothing freezeFrame) then button [onClick <| SetFreezeFrame Nothing] [text "unfreeze"] else text ""
                         ]
-                    , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player history
+                    , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
                     , text "Moves:"
                     , decisions effectiveHistory
                       |> List.indexedMap (\i (g, m) -> li [] [ button [onClick <| SetFreezeFrame <| Just i] [text "Rewind"]
