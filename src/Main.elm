@@ -48,7 +48,7 @@ update msg model =
             in
                 ( Playing { state | history = history }
                 , Cmd.batch [ SS.poll SetHistory state.conn history
-                            , if Debug.log "" (currentPlayer (run history)) == state.player then notify "Your turn!"
+                            , if currentPlayer (run history) == state.player then notify "Your turn!"
                               else Cmd.none
                             ]
                 )
