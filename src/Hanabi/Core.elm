@@ -112,18 +112,17 @@ step move game =
     in
         advancePlayers <| case move of
             Play i ->
-                draw active i <|
-                    let
-                        card = case getCard game active i of
-                            Nothing -> Debug.todo "no such card!?"
-                            Just c -> c
-                        isMatch = card.rank == 1 + (game.towers |> Dict.get card.color |> Maybe.withDefault 0)
-                    in
-                        draw active i
-                            { game | nFuses = game.nFuses - if isMatch then 0 else 1
-                                   , nHints = game.nHints + if isMatch && card.rank == 5 then 1 else 0
-                                   , towers = if isMatch then game.towers |> Dict.update card.color (\_ -> Just card.rank) else game.towers
-                                   }
+                let
+                    card = case getCard game active i of
+                        Nothing -> Debug.todo "no such card!?"
+                        Just c -> c
+                    isMatch = card.rank == 1 + (game.towers |> Dict.get card.color |> Maybe.withDefault 0)
+                in
+                    draw active i
+                        { game | nFuses = game.nFuses - if isMatch then 0 else 1
+                               , nHints = game.nHints + if isMatch && card.rank == 5 then 1 else 0
+                               , towers = if isMatch then game.towers |> Dict.update card.color (\_ -> Just card.rank) else game.towers
+                               }
             Discard i ->
                 draw active i { game | nHints = game.nHints + 1 |> min 8 }
             HintColor p c -> { game | nHints = game.nHints - 1 }
