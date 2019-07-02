@@ -44,3 +44,6 @@ aggregateHints history player posn =
                         agg
     in
         List.foldl aggregate noInformation (decisions history)
+
+run : History -> GameState
+run history = List.foldl step history.init history.moves

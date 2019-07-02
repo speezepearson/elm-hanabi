@@ -5,7 +5,7 @@ import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, t
 import Html.Attributes as Attrs exposing (value, placeholder)
 import Html.Events exposing (onClick, onInput)
 
-import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions)
+import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions, run)
 import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard)
 import Hanabi.MVC.Core exposing (..)
 
@@ -93,9 +93,6 @@ viewMove viewer g m =
 
 cardKey : Card -> String
 cardKey {color, rank} = color ++ String.fromInt rank
-
-run : History -> GameState
-run history = List.foldl step history.init history.moves
 
 viewHands : Player -> Bool -> History -> Html Msg
 viewHands player interactive history =

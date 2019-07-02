@@ -3,11 +3,12 @@ import Dict
 import Random
 
 import StateServer as SS
-import Hanabi.Assistance exposing (History)
-import Hanabi.Core exposing (randomGame)
+import Hanabi.Assistance exposing (History, run)
+import Hanabi.Core exposing (randomGame, currentPlayer)
 import Hanabi.MVC.API exposing (conn)
 import Hanabi.MVC.Core exposing (Msg(..), Model(..), init)
 import Hanabi.MVC.View exposing (view)
+import Ports exposing (notify)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -46,7 +47,10 @@ update msg model =
                     Err e -> Debug.log (Debug.toString ("Error fetching history", e)) state.history
             in
                 ( Playing { state | history = history }
-                , SS.poll SetHistory state.conn history
+                , Cmd.batch [ SS.poll SetHistory state.conn history
+                            , if Debug.log "" (currentPlayer (run history)) == state.player then notify "Your turn!"
+                              else Cmd.none
+                            ]
                 )
         (Playing state, SetFreezeFrame t) -> (Playing { state | freezeFrame = t }, Cmd.none)
         (Playing state, MakeMove move) ->
