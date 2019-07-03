@@ -6,9 +6,15 @@ import StateServer as SS
 import Hanabi.Assistance exposing (History, run)
 import Hanabi.Core exposing (randomGame, currentPlayer)
 import Hanabi.MVC.API exposing (conn)
-import Hanabi.MVC.Core exposing (Msg(..), Model(..), init)
+import Hanabi.MVC.Core exposing (Msg(..), Model(..))
 import Hanabi.MVC.View exposing (view)
 import Ports exposing (notify)
+
+init : String -> (Model, Cmd Msg)
+init flags =
+    case flags of
+        "" -> (Creating {gameId = "", players = ""}, Cmd.none)
+        gid -> (Creating {gameId = gid, players = ""}, SS.get SetHistory (conn gid))
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =

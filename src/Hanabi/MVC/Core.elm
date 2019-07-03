@@ -32,6 +32,3 @@ type Msg
     -- Misc
     | MadeMove
     | Poll
-
-init : () -> (Model, Cmd Msg)
-init _ = (Creating {gameId = "", players = ""}, Cmd.none)

@@ -26,7 +26,9 @@ view model =
 
         ChoosingPlayer {history} ->
             div []
-                (text "You are: " :: List.map (\p -> button [onClick <| SetPlayer p] [text p]) history.init.players)
+                (text "You are: " :: (history.init.players
+                                      |> List.map (\p -> button [onClick <| SetPlayer p] [text p])
+                                      |> List.intersperse (text " or ")))
 
         Playing {player, history, freezeFrame, polling} ->
             let
