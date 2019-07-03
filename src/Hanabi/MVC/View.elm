@@ -6,7 +6,7 @@ import Html.Attributes as Attrs exposing (value, placeholder, style)
 import Html.Events exposing (onClick, onInput)
 
 import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions, run)
-import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard)
+import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard, colors, ranks)
 import Hanabi.MVC.Core exposing (..)
 
 
@@ -166,6 +166,7 @@ viewGame : Bool -> Player -> History -> Html Msg
 viewGame interactive viewer history =
     let
         game = run history
+        unseenCards = game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)
     in
         ul []
             [ text <| (if isOver game then "Game over. " else "")
@@ -174,5 +175,21 @@ viewGame interactive viewer history =
                            )]
             , li [] [text "Towers: ", game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
             , viewHands viewer interactive history
-            , li [] [text "Unseen cards: ", (game.deck ++ (Dict.get viewer game.hands |> Maybe.withDefault Dict.empty |> Dict.values)) |> List.map cardKey |> List.sort |> String.join " " |> text]
+            , li [] [text "Unseen cards: ", viewCardCountingTable unseenCards]
             ]
+
+viewCardCountingTable : List Card -> Html a
+viewCardCountingTable cards =
+    colors
+    |> List.map (\c ->
+        ranks
+        |> List.map (\r -> td [] [cards
+                                  |> List.filter ((==) {color=c, rank=r})
+                                  |> List.length
+                                  |> String.fromInt
+                                  |> text])
+        |> (::) (td [] [b [] [text c]])
+        |> tr []
+        )
+    |> (::) (tr [] <| (td [] []) :: (ranks |> List.map (\r -> td [] [b [] [text <| String.fromInt <| r]])))
+    |> table []
