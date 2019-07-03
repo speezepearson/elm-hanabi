@@ -2,7 +2,7 @@ module Hanabi.MVC.View exposing (view)
 
 import Dict
 import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br)
-import Html.Attributes as Attrs exposing (value, placeholder)
+import Html.Attributes as Attrs exposing (value, placeholder, style)
 import Html.Events exposing (onClick, onInput)
 
 import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions, run)
@@ -28,7 +28,7 @@ view model =
             div []
                 (text "You are: " :: List.map (\p -> button [onClick <| SetPlayer p] [text p]) history.init.players)
 
-        Playing {player, history, freezeFrame} ->
+        Playing {player, history, freezeFrame, polling} ->
             let
                 nMoves = freezeFrame |> Maybe.withDefault (List.length history.moves)
                 effectiveHistory = { history | moves = List.take nMoves history.moves}
@@ -40,8 +40,9 @@ view model =
                         , text <| " Time step " ++ (String.fromInt (nMoves+1)) ++ "/" ++ (String.fromInt <| List.length history.moves + 1 ) ++ " "
                         , button [Attrs.disabled <| nMoves == List.length history.moves, onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"]
                         , button [Attrs.disabled <| isNothing freezeFrame, onClick <| SetFreezeFrame Nothing] [text "Unfreeze"]
+                        , if polling then text "" else button [ style "background-color" "red", onClick Poll ] [text "Reconnect"]
                         ]
-                    , viewGame (not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
+                    , viewGame (polling && not (isOver game) && isNothing freezeFrame && player == currentPlayer game) player effectiveHistory
                     , text "Moves:"
                     , decisions effectiveHistory
                       |> List.indexedMap (\i (g, m) -> tr [] [ td [] [button [onClick <| SetFreezeFrame <| Just i] [text "Context"]]

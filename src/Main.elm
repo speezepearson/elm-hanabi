@@ -22,7 +22,7 @@ update msg model =
                     let
                         players = List.map String.trim <| String.split "," state.players
                     in
-                        ( Creating state
+                        ( model
                         , Random.generate RandomGameGenerated (randomGame players)
                         )
                 RandomGameGenerated g ->
@@ -38,25 +38,25 @@ update msg model =
         ChoosingPlayer state ->
             case msg of
                 SetPlayer p ->
-                    ( Playing {conn=state.conn, player=p, history=state.history, freezeFrame=Nothing}
+                    ( Playing {conn=state.conn, player=p, history=state.history, freezeFrame=Nothing, polling=True}
                     , SS.poll SetHistory state.conn state.history
                     )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
         Playing state ->
             case msg of
-                SetHistory result ->
-                    let
-                        history = case Debug.log (Debug.toString result) result of
-                            Ok h -> h
-                            Err e -> Debug.log (Debug.toString ("Error fetching history", e)) state.history
-                    in
-                        ( Playing { state | history = history }
-                        , Cmd.batch [ SS.poll SetHistory state.conn history
-                                    , if currentPlayer (run history) == state.player then notify "Your turn!"
-                                      else Cmd.none
-                                    ]
-                        )
+                SetHistory (Ok history) ->
+                    ( Playing { state | history = history }
+                    , Cmd.batch [ SS.poll SetHistory state.conn history
+                                , if currentPlayer (run history) == state.player then notify "Your turn!"
+                                  else Cmd.none
+                                ]
+                    )
+
+                SetHistory (Err e) ->
+                    ( Playing { state | polling = False }
+                    , notify <| "Error talking to server: " ++ Debug.log "" (Debug.toString e)
+                    )
                 SetFreezeFrame t -> (Playing { state | freezeFrame = t }, Cmd.none)
                 MakeMove move ->
                     let
@@ -67,6 +67,7 @@ update msg model =
                         , SS.update (always MadeMove) state.conn oldHistory newHistory
                         )
                 MadeMove -> (Playing state, Cmd.none)
+                Poll -> (Playing { state | polling = True }, SS.poll SetHistory state.conn state.history )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
 main = Browser.element {init=init, update=update, view=view, subscriptions=(always Sub.none)}

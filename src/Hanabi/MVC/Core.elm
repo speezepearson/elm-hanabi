@@ -13,7 +13,7 @@ type alias TimeStep = Int
 type Model
     = Creating {gameId: SS.Name, players: String}
     | ChoosingPlayer {conn: Connection, history: History}
-    | Playing {conn: Connection, player: Player, history: History, freezeFrame: Maybe TimeStep}
+    | Playing {conn: Connection, player: Player, history: History, freezeFrame: Maybe TimeStep, polling: Bool}
 
 type Msg
     -- Creating
@@ -31,6 +31,7 @@ type Msg
     | SetFreezeFrame (Maybe TimeStep)
     -- Misc
     | MadeMove
+    | Poll
 
 init : () -> (Model, Cmd Msg)
 init _ = (Creating {gameId = "", players = ""}, Cmd.none)
