@@ -1,6 +1,8 @@
 module Hanabi.MVC.Core exposing (..)
 
+import Browser
 import Http
+import Url
 
 import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (GameState, Player, Move)
@@ -32,3 +34,5 @@ type Msg
     -- Misc
     | MadeMove
     | Poll
+    | UrlRequested Browser.UrlRequest
+    | UrlChanged Url.Url

@@ -1,6 +1,8 @@
 import Browser
+import Browser.Navigation as Nav
 import Dict
 import Random
+import Url
 
 import StateServer as SS
 import Hanabi.Assistance exposing (History, run)
@@ -9,12 +11,23 @@ import Hanabi.MVC.API exposing (conn)
 import Hanabi.MVC.Core exposing (Msg(..), Model(..))
 import Hanabi.MVC.View exposing (view)
 import Ports exposing (notify)
+import Routes exposing (toRoute)
 
-init : String -> (Model, Cmd Msg)
-init flags =
-    case flags of
-        "" -> (Creating {gameId = "", players = ""}, Cmd.none)
-        gid -> (Creating {gameId = gid, players = ""}, SS.get SetHistory (conn gid))
+init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
+init flags url key =
+    case toRoute url of
+        Routes.Home ->
+            ( Creating {gameId = "", players = ""}
+            , Cmd.none
+            )
+        Routes.Game gid player ->
+            ( Creating {gameId = gid, players = ""}
+            , SS.get SetHistory (conn gid)
+            )
+        Routes.NotFound ->
+            ( Creating {gameId = "", players = ""}
+            , Cmd.none
+            )
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -76,4 +89,11 @@ update msg model =
                 Poll -> (Playing { state | polling = True }, SS.poll SetHistory state.conn state.history )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
-main = Browser.element {init=init, update=update, view=view, subscriptions=(always Sub.none)}
+main = Browser.application
+    { init = init
+    , update = update
+    , view = view >> (\html -> {title="Hanabi", body=[html]})
+    , subscriptions = (always Sub.none)
+    , onUrlRequest = UrlRequested
+    , onUrlChange = UrlChanged
+    }
