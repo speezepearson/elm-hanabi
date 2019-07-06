@@ -13,8 +13,8 @@ type Route = Home | Game SS.Name (Maybe Player) | NotFound
 route : Parser (Route -> a) a
 route =
     oneOf
-        [ map Home top
-        , map Game (s "game" </> string <?> Query.string "player")
+        [ map Home (s "apps" </> s "hanabi")
+        , map Game (s "apps" </> s "hanabi" </> s "game" </> string <?> Query.string "player")
         ]
 
 toRoute : Url.Url -> Route
