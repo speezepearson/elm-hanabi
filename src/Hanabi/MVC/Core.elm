@@ -32,7 +32,6 @@ type Msg
     | SetPlayer Player
     -- Playing
     | MakeMove Move
-    | SetHistory (Result Http.Error History)
     | SetFreezeFrame (Maybe TimeStep)
     -- Misc
     | RetryLoadGame

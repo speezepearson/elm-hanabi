@@ -47,7 +47,7 @@ update msg model =
             case msg of
                 SetPlayers s -> (Creating {state | players = s}, Cmd.none)
                 SetGameId id -> (Creating {state | gameId = id}, Cmd.none)
-                Join -> (Creating state, SS.get SetHistory (conn state.gameId))
+                Join -> (Creating state, SS.get LoadedGame (conn state.gameId))
                 Create ->
                     let
                         players = List.map String.trim <| String.split "," state.players
@@ -57,11 +57,11 @@ update msg model =
                         )
                 RandomGameGenerated g ->
                     ( model
-                    , SS.create SetHistory (conn state.gameId) {init=g, moves=[]}
+                    , SS.create LoadedGame (conn state.gameId) {init=g, moves=[]}
                     )
-                SetHistory (Ok history) ->
+                LoadedGame (Ok history) ->
                     (ChoosingPlayer {conn = conn state.gameId, history = history}, Cmd.none) -- TODO race condition with HTTP vs input to gameId field
-                SetHistory (Err err) ->
+                LoadedGame (Err err) ->
                     (Debug.log (Debug.toString err) model, Cmd.none)
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
@@ -86,21 +86,21 @@ update msg model =
             case msg of
                 SetPlayer p ->
                     ( Playing {conn=state.conn, player=p, history=state.history, freezeFrame=Nothing, polling=True}
-                    , SS.poll SetHistory state.conn state.history
+                    , SS.poll LoadedGame state.conn state.history
                     )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
         Playing state ->
             case msg of
-                SetHistory (Ok history) ->
+                LoadedGame (Ok history) ->
                     ( Playing { state | history = history }
-                    , Cmd.batch [ SS.poll SetHistory state.conn history
+                    , Cmd.batch [ SS.poll LoadedGame state.conn history
                                 , if currentPlayer (run history) == state.player then notify "Your turn!"
                                   else Cmd.none
                                 ]
                     )
 
-                SetHistory (Err e) ->
+                LoadedGame (Err e) ->
                     ( Playing { state | polling = False }
                     , notify <| "Error talking to server: " ++ Debug.log "" (Debug.toString e)
                     )
@@ -114,7 +114,7 @@ update msg model =
                         , SS.update (always MadeMove) state.conn oldHistory newHistory
                         )
                 MadeMove -> (Playing state, Cmd.none)
-                Poll -> (Playing { state | polling = True }, SS.poll SetHistory state.conn state.history )
+                Poll -> (Playing { state | polling = True }, SS.poll LoadedGame state.conn state.history )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
 main = Browser.application
