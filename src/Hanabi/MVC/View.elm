@@ -1,7 +1,7 @@
 module Hanabi.MVC.View exposing (view)
 
 import Dict
-import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br)
+import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br, pre)
 import Html.Attributes as Attrs exposing (value, placeholder, style)
 import Html.Events exposing (onClick, onInput)
 
@@ -22,6 +22,14 @@ view model =
                 , text "Players: "
                 , input [ onInput SetPlayers, value players, placeholder "Alice, Bob, Charlie" ] []
                 , button [ onClick Create ] [text "Create"]
+                ]
+
+        LoadingGame _ -> text "Loading..."
+        LoadingFailed {message} ->
+            div []
+                [ text <| "Loading game failed:"
+                , pre [] [text <| String.replace "\\n" "\n" message]
+                , button [onClick RetryLoadGame] [text "Retry"]
                 ]
 
         ChoosingPlayer {history} ->

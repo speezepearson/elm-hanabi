@@ -11,9 +11,12 @@ import StateServer as SS
 type alias Connection = SS.Connection History
 
 type alias TimeStep = Int
+type alias LoadingIntention = History -> (Model, Cmd Msg)
 
 type Model
     = Creating {gameId: SS.Name, players: String}
+    | LoadingGame { conn: Connection, intention : LoadingIntention }
+    | LoadingFailed { message : String, conn: Connection, intention : LoadingIntention }
     | ChoosingPlayer {conn: Connection, history: History}
     | Playing {conn: Connection, player: Player, history: History, freezeFrame: Maybe TimeStep, polling: Bool}
 
@@ -32,6 +35,8 @@ type Msg
     | SetHistory (Result Http.Error History)
     | SetFreezeFrame (Maybe TimeStep)
     -- Misc
+    | RetryLoadGame
+    | LoadedGame (Result Http.Error History)
     | MadeMove
     | Poll
     | UrlRequested Browser.UrlRequest

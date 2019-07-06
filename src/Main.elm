@@ -15,15 +15,26 @@ import Routes exposing (toRoute)
 
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
-    case toRoute url of
+    case toRoute (Debug.log "init url" url) of
         Routes.Home ->
             ( Creating {gameId = "", players = ""}
             , Cmd.none
             )
         Routes.Game gid player ->
-            ( Creating {gameId = gid, players = ""}
-            , SS.get SetHistory (conn gid)
-            )
+            let
+                intention = case player of
+                    Nothing -> (\h ->
+                        ( ChoosingPlayer {conn=conn gid, history=h}
+                        , Cmd.none
+                        ))
+                    Just p -> (\h ->
+                        ( Playing {conn=conn gid, history=h, freezeFrame=Nothing, player=p, polling=True}
+                        , SS.poll LoadedGame (conn gid) h
+                        ))
+            in
+                ( LoadingGame {conn=(conn gid), intention=intention}
+                , SS.get LoadedGame (conn gid)
+                )
         Routes.NotFound ->
             ( Creating {gameId = "", players = ""}
             , Cmd.none
@@ -52,6 +63,23 @@ update msg model =
                     (ChoosingPlayer {conn = conn state.gameId, history = history}, Cmd.none) -- TODO race condition with HTTP vs input to gameId field
                 SetHistory (Err err) ->
                     (Debug.log (Debug.toString err) model, Cmd.none)
+                _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
+
+        LoadingGame {conn, intention} ->
+            case msg of
+                LoadedGame (Ok h) -> intention h
+                LoadedGame (Err e) ->
+                    ( LoadingFailed { message = Debug.toString e, conn=conn, intention = intention}
+                    , Cmd.none
+                    )
+                _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
+
+        LoadingFailed {conn, intention} ->
+            case msg of
+                RetryLoadGame ->
+                    ( LoadingGame {conn=conn, intention = intention}
+                    , SS.get LoadedGame conn
+                    )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
         ChoosingPlayer state ->
