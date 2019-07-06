@@ -17,7 +17,7 @@ view model =
             div []
                 [ text "Game id:"
                 , input [ onInput SetGameId, value gameId, placeholder "srpplayground" ] []
-                , button [ onClick Create ] [text "Join"]
+                , button [ onClick Join ] [text "Join"]
                 , br [] [], text "or", br [] []
                 , text "Players: "
                 , input [ onInput SetPlayers, value players, placeholder "Alice, Bob, Charlie" ] []
