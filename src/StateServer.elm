@@ -30,7 +30,7 @@ get msg conn =
 poll : (Result Http.Error a -> msg) -> Connection a -> a -> Cmd msg
 poll msg conn current =
     Http.post
-        { url = "/poll/" ++ conn.name
+        { url = "/states/" ++ conn.name ++ "/poll"
         , body = Http.jsonBody <| E.object [("current_state", conn.encode current)]
         , expect = Http.expectJson msg (D.field "current_state" conn.decoder)
         }
