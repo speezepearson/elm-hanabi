@@ -10,9 +10,9 @@ import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Ca
 import Hanabi.MVC.Core exposing (..)
 
 
-view : Model -> Html Msg
+view : AppModel -> Html Msg
 view model =
-    case model of
+    case model.page of
         Creating {gameId, players} ->
             div []
                 [ text "Game id:"

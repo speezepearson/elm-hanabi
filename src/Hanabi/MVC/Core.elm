@@ -1,6 +1,7 @@
 module Hanabi.MVC.Core exposing (..)
 
 import Browser
+import Browser.Navigation as Nav
 import Http
 import Url
 
@@ -11,9 +12,19 @@ import StateServer as SS
 type alias Connection = SS.Connection History
 
 type alias TimeStep = Int
-type alias LoadingIntention = History -> (Model, Cmd Msg)
+type alias LoadingIntention = History -> (AppModel, Cmd Msg)
 
-type Model
+type alias User =
+    { name : String
+    }
+
+type alias AppModel =
+    { navKey : Nav.Key
+    , user : Maybe User
+    , page : PageModel
+    }
+
+type PageModel
     = Creating {gameId: SS.Name, players: String}
     | LoadingGame { conn: Connection, intention : LoadingIntention }
     | LoadingFailed { message : String, conn: Connection, intention : LoadingIntention }
