@@ -37,10 +37,11 @@ encodeGameState g =
         , ("hands", E.object <| Dict.toList <| Dict.map (\p h -> encodeHand h) g.hands)
         , ("deck", E.list encodeCard g.deck)
         , ("discardPile", E.list encodeCard g.discardPile)
+        , ("movesSinceLastDraw", Maybe.map E.int g.movesSinceLastDraw |> Maybe.withDefault E.null)
         ]
 gameStateDecoder : D.Decoder GameState
 gameStateDecoder =
-    D.map7 (\fus hin tow pla han dec dis -> {nFuses=fus, nHints=hin, towers=tow, players=pla, hands=han, deck=dec, discardPile=dis})
+    D.map8 (\fus hin tow pla han dec dis msld -> {nFuses=fus, nHints=hin, towers=tow, players=pla, hands=han, deck=dec, discardPile=dis, movesSinceLastDraw=msld})
         (D.field "nFuses" D.int)
         (D.field "nHints" D.int)
         (D.field "towers" <| D.dict D.int)
@@ -48,6 +49,7 @@ gameStateDecoder =
         (D.field "hands" <| D.dict handDecoder)
         (D.field "deck" <| D.list cardDecoder)
         (D.field "discardPile" <| D.list cardDecoder)
+        (D.field "movesSinceLastDraw" <| D.nullable D.int)
 
 encodeMove : Move -> E.Value
 encodeMove m =

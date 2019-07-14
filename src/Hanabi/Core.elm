@@ -19,6 +19,7 @@ type alias GameState =
     , hands : Dict.Dict Player Hand
     , deck : List Card
     , discardPile : List Card
+    , movesSinceLastDraw : Maybe Int
     }
 
 type Move
@@ -64,6 +65,7 @@ uninitializedGame deck =
     , hands = Dict.empty
     , deck = deck
     , discardPile = []
+    , movesSinceLastDraw = Nothing
     }
 
 initializeGame : List Player -> GameState -> GameState
@@ -94,6 +96,7 @@ isOver g =
        (g.nFuses == 0)
     || (g.towers |> Dict.values |> List.sum |> (\n -> n == 25))
     || (g.hands |> Dict.values |> List.map Dict.size |> List.all (\n -> n < 4))
+    || (g.movesSinceLastDraw |> Maybe.map (\n -> n > List.length g.players) |> Maybe.withDefault False)
 
 score : GameState -> Int
 score g = g.towers |> Dict.values |> List.sum
@@ -101,24 +104,28 @@ score g = g.towers |> Dict.values |> List.sum
 draw : Player -> CardPosition -> GameState -> GameState
 draw p i g =
     let
+        movesSinceLastDraw = if List.length g.deck == 1 then Just 0 else g.movesSinceLastDraw
         topCard = List.head g.deck
         updateHand = Dict.update i <| always topCard
         updateHands = Dict.update p (Maybe.map updateHand)
     in
         { g  | deck = List.drop 1 g.deck
              , hands = g.hands |> updateHands
+             , movesSinceLastDraw = movesSinceLastDraw
              }
 
-advancePlayers : GameState -> GameState
-advancePlayers g =
-    { g | players = List.drop 1 g.players ++ List.take 1 g.players }
+postMove : GameState -> GameState
+postMove g =
+    { g | players = List.drop 1 g.players ++ List.take 1 g.players
+        , movesSinceLastDraw = g.movesSinceLastDraw |> Maybe.map ((+) 1)
+        }
 
 step : Move -> GameState -> GameState
 step move game =
     let
         active = currentPlayer game
     in
-        advancePlayers <| case move of
+        postMove <| case move of
             Play i ->
                 let
                     card = case getCard game active i of
