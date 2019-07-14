@@ -127,17 +127,19 @@ viewAggregatedHints hints =
 
 viewOwnHand : History -> Bool -> Player -> Html Msg
 viewOwnHand history interactive player =
-    Dict.get player (run history).hands
-    |> Maybe.withDefault Dict.empty
-    |> Dict.toList
-    |> List.map (\(posn, card) -> tr []
-        [ td [] [ button [Attrs.disabled (not interactive), onClick <| MakeMove <| Discard posn] [text "Discard"]
-                , button [Attrs.disabled (not interactive), onClick <| MakeMove <| Play posn] [text "Play"]
+    let game = run history in
+        posns (List.length history.init.players)
+        |> List.map (\posn -> case getCard game player posn of
+            Just _ -> tr []
+                [ td [] [ button [Attrs.disabled (not interactive), onClick <| MakeMove <| Discard posn] [text "Discard"]
+                        , button [Attrs.disabled (not interactive), onClick <| MakeMove <| Play posn] [text "Play"]
+                        ]
+                , td [] [viewAggregatedHints (aggregateHints history player posn)]
                 ]
-        , td [] [viewAggregatedHints (aggregateHints history player posn)]
-        ])
-    |> (\rows -> [tr [] [th [] [text "Actions"], th [] [text "Options"]]] ++ rows)
-    |> table []
+            Nothing -> tr [] [td [] [text "__"], td [] [text "__"]]
+            )
+        |> (\rows -> [tr [] [th [] [text "Actions"], th [] [text "Options"]]] ++ rows)
+        |> table []
 
 viewOtherHand : History -> Bool -> Player -> Html Msg
 viewOtherHand history interactive player =
