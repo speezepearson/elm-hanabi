@@ -184,7 +184,8 @@ viewGame interactive viewer history =
                            ++ String.fromInt game.nHints ++ " hints. "
                            )]
             , li [] [text "Towers: ", game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
-            , viewHands viewer interactive history
+            , li [] [viewHands viewer interactive history]
+            , li [] [text "Discarded:", viewCardCountingTable game.discardPile]
             , li [] [text "Unseen cards: ", viewCardCountingTable unseenCards]
             ]
 

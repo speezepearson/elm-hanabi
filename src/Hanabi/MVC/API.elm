@@ -36,16 +36,18 @@ encodeGameState g =
         , ("players", E.list E.string g.players)
         , ("hands", E.object <| Dict.toList <| Dict.map (\p h -> encodeHand h) g.hands)
         , ("deck", E.list encodeCard g.deck)
+        , ("discardPile", E.list encodeCard g.discardPile)
         ]
 gameStateDecoder : D.Decoder GameState
 gameStateDecoder =
-    D.map6 (\fus hin tow pla han dec -> {nFuses=fus, nHints=hin, towers=tow, players=pla, hands=han, deck=dec})
+    D.map7 (\fus hin tow pla han dec dis -> {nFuses=fus, nHints=hin, towers=tow, players=pla, hands=han, deck=dec, discardPile=dis})
         (D.field "nFuses" D.int)
         (D.field "nHints" D.int)
         (D.field "towers" <| D.dict D.int)
         (D.field "players" <| D.list D.string)
         (D.field "hands" <| D.dict handDecoder)
         (D.field "deck" <| D.list cardDecoder)
+        (D.field "discardPile" <| D.list cardDecoder)
 
 encodeMove : Move -> E.Value
 encodeMove m =

@@ -18,6 +18,7 @@ type alias GameState =
     , players : List Player
     , hands : Dict.Dict Player Hand
     , deck : List Card
+    , discardPile : List Card
     }
 
 type Move
@@ -122,9 +123,15 @@ step move game =
                         { game | nFuses = game.nFuses - if isMatch then 0 else 1
                                , nHints = game.nHints + if isMatch && card.rank == 5 then 1 else 0
                                , towers = if isMatch then game.towers |> Dict.update card.color (\_ -> Just card.rank) else game.towers
+                               , discardPile = if isMatch then game.discardPile else (card :: game.discardPile)
                                }
             Discard i ->
-                draw active i { game | nHints = game.nHints + 1 |> min 8 }
+                draw active i
+                    { game | nHints = game.nHints + 1 |> min 8
+                           , discardPile = case getCard game active i of
+                               Nothing -> Debug.todo "no such card!?"
+                               Just c -> c :: game.discardPile
+                           }
             HintColor p c -> { game | nHints = game.nHints - 1 }
             HintRank p c -> { game | nHints = game.nHints - 1 }
 
