@@ -162,7 +162,7 @@ viewOtherHand history interactive player =
                     in
                         tr [] [td [] [cardRepr], td [] [viewAggregatedHints (aggregateHints history player posn)]]
     in
-        posns
+        posns (List.length game.players)
         |> List.map row
         |> (\rows -> [tr [] [th [] [text "Card"], th [] [text "Options"]]] ++ rows)
         |> table []

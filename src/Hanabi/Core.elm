@@ -34,8 +34,12 @@ colors = ["B", "G", "R", "W", "Y"]
 ranks : List Rank
 ranks = [1, 2, 3, 4, 5]
 
-posns : List CardPosition
-posns = ["left", "midleft", "midright", "right"]
+posns : Int -> List CardPosition
+posns nPlayers =
+    if nPlayers < 4 then
+        ["left", "midleft", "center", "midright", "right"]
+    else
+        ["left", "midleft", "midright", "right"]
 
 rankMultiplicities : Dict.Dict Rank Int
 rankMultiplicities = Dict.fromList [(1, 3), (2, 2), (3, 2), (4, 2), (5, 1)]
@@ -59,16 +63,19 @@ uninitializedGame deck =
     , players = []
     , hands = Dict.empty
     , deck = deck
+    , discardPile = []
     }
 
 initializeGame : List Player -> GameState -> GameState
 initializeGame players game =
     let
+        positions = posns (List.length players)
+
         drawHandFor : Player -> GameState -> GameState
         drawHandFor player g =
             let
-                hand = List.take 4 g.deck |> List.map2 Tuple.pair posns |> Dict.fromList
-                deck = List.drop 4 g.deck
+                hand = List.map2 Tuple.pair positions g.deck |> Dict.fromList
+                deck = List.drop (Dict.size hand) g.deck
             in
                 { g | hands = g.hands |> Dict.insert player hand
                     , deck = deck
