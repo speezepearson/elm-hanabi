@@ -181,7 +181,8 @@ viewGame interactive viewer history =
         ul []
             [ text <| (if isOver game then "Game over. " else "")
             , li [] [text (String.fromInt game.nFuses ++ " fuses, "
-                           ++ String.fromInt game.nHints ++ " hints. "
+                           ++ String.fromInt game.nHints ++ " hints, "
+                           ++ String.fromInt (List.length game.deck) ++ " cards left. "
                            )]
             , li [] [text "Towers: ", game.towers |> Dict.toList |> List.map (\(c, r) -> c ++ String.fromInt r) |> String.join ", " |> text]
             , li [] [viewHands viewer interactive history]
