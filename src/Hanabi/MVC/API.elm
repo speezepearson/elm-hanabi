@@ -10,11 +10,12 @@ import Hanabi.Core exposing (GameState, Move(..), Hand, Card)
 import Hanabi.MVC.Core exposing (Connection, Msg(..))
 import StateServer as SS
 
-conn : SS.Name -> Connection
-conn name =
+conn : String -> SS.Name -> Connection
+conn urlRoot name =
     { encode = encodeHistory
     , decoder = historyDecoder
     , name = name
+    , urlRoot = urlRoot
     }
 
 encodeCard : Card -> E.Value

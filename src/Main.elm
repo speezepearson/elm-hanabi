@@ -13,37 +13,58 @@ import Hanabi.MVC.View exposing (view)
 import Ports exposing (notify)
 import Routes exposing (toRoute)
 
-init : () -> Url.Url -> Nav.Key -> (AppModel, Cmd Msg)
+type alias Flags =
+    { appRoot : String
+    , stateServerRoot : String
+    }
+
+
+init : Flags -> Url.Url -> Nav.Key -> (AppModel, Cmd Msg)
 init flags url key =
-    case toRoute (Debug.log "init url" url) of
+    case toRoute flags.appRoot (Debug.log "init url" url) of
         Routes.Home ->
-            ( {navKey = key, user=Nothing, page=Creating {gameId = "", players = ""}}
+            ( { navKey = key
+              , user = Nothing
+              , page = Creating {gameId = "", players = ""}
+              , stateServerRoot = flags.stateServerRoot
+              }
             , Cmd.none
             )
         Routes.Game gid player ->
             let
-                user: Maybe User
+                user : Maybe User
                 user = Maybe.map User player
 
+                connection = conn flags.stateServerRoot gid
+
                 appModel : PageModel -> AppModel
-                appModel page = {navKey = key, user = user, page = page}
+                appModel page =
+                    { navKey = key
+                    , user = user
+                    , page = page
+                    , stateServerRoot = flags.stateServerRoot
+                    }
 
                 intention = case player of
                     Nothing -> (\h ->
-                        ( appModel <| ChoosingPlayer {conn=conn gid, history=h}
+                        ( appModel <| ChoosingPlayer {conn=connection, history=h}
                         , Cmd.none
                         ))
                     Just p -> (\h ->
-                        ( appModel <| Playing {conn=conn gid, history=h, freezeFrame=Nothing, player=p, polling=True}
-                        , SS.poll LoadedGame (conn gid) h
+                        ( appModel <| Playing {conn=connection, history=h, freezeFrame=Nothing, player=p, polling=True}
+                        , SS.poll LoadedGame connection h
                         ))
             in
-                ( appModel <| LoadingGame {conn=(conn gid), intention=intention}
-                , SS.get LoadedGame (conn gid)
+                ( appModel <| LoadingGame {conn=connection, intention=intention}
+                , SS.get LoadedGame connection
                 )
         Routes.NotFound ->
-            ( {navKey = key, user=Nothing, page=Creating {gameId = "", players = ""}}
-            , Cmd.none
+            ( { navKey = key
+              , user = Nothing
+              , page = Creating {gameId = "", players = ""}
+              , stateServerRoot = flags.stateServerRoot
+              }
+            , Nav.load flags.appRoot
             )
 
 update : Msg -> AppModel -> (AppModel, Cmd Msg)
@@ -54,10 +75,13 @@ update msg model =
     in
     case model.page of
         Creating state ->
+            let
+                connection = conn model.stateServerRoot state.gameId
+            in
             case msg of
                 SetPlayers s -> (still <| Creating {state | players = s}, Cmd.none)
                 SetGameId id -> (still <| Creating {state | gameId = id}, Cmd.none)
-                Join -> (still <| Creating state, SS.get LoadedGame (conn state.gameId))
+                Join -> (still <| Creating state, SS.get LoadedGame connection)
                 Create ->
                     let
                         players = List.map String.trim <| String.split "," state.players
@@ -67,12 +91,13 @@ update msg model =
                         )
                 RandomGameGenerated g ->
                     ( model
-                    , SS.create LoadedGame (conn state.gameId) {init=g, moves=[]}
+                    , SS.create LoadedGame connection {init=g, moves=[]}
                     )
                 LoadedGame (Ok history) ->
-                    (still <| ChoosingPlayer {conn = conn state.gameId, history = history}, Cmd.none) -- TODO race condition with HTTP vs input to gameId field
+                    (still <| ChoosingPlayer {conn = connection, history = history}, Cmd.none) -- TODO race condition with HTTP vs input to gameId field
                 LoadedGame (Err err) ->
                     (Debug.log (Debug.toString err) model, Cmd.none)
+                UrlChanged _ -> (model, Cmd.none)
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
         LoadingGame {conn, intention} ->

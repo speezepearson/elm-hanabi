@@ -20,6 +20,7 @@ type alias User =
 
 type alias AppModel =
     { navKey : Nav.Key
+    , stateServerRoot : String
     , user : Maybe User
     , page : PageModel
     }

@@ -13,10 +13,17 @@ type Route = Home | Game SS.Name (Maybe Player) | NotFound
 route : Parser (Route -> a) a
 route =
     oneOf
-        [ map Home (s "apps" </> s "hanabi")
-        , map Game (s "apps" </> s "hanabi" </> s "game" </> string <?> Query.string "player")
+        [ map Home top
+        , map Game (s "game" </> string <?> Query.string "player")
         ]
 
-toRoute : Url.Url -> Route
-toRoute url =
-    Maybe.withDefault NotFound (parse route url)
+toRoute : String -> Url.Url -> Route
+toRoute appRoot url =
+    let
+        strippedPath : String
+        strippedPath =
+            if String.startsWith appRoot url.path
+                then String.dropLeft (String.length appRoot) url.path
+                else url.path
+    in
+    Maybe.withDefault NotFound (parse route {url | path = strippedPath})
