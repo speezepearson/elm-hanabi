@@ -3,6 +3,7 @@ import Browser.Navigation as Nav
 import Dict
 import Random
 import Url
+import Url.Builder
 
 import StateServer as SS
 import Hanabi.Assistance exposing (History, run)
@@ -123,12 +124,20 @@ update msg model =
                     ( { model | page = Playing {conn=state.conn, player=p, history=state.history, freezeFrame=Nothing, polling=True}
                               , user = Just {name=p}
                       }
-                    , SS.poll LoadedGame state.conn state.history
+                    , Cmd.batch
+                        [ SS.poll LoadedGame state.conn state.history
+                        , Nav.pushUrl model.navKey
+                            <| Url.Builder.relative []
+                                [ Url.Builder.string "game" state.conn.name
+                                , Url.Builder.string "player" p
+                                ]
+                        ]
                     )
                 _ -> Debug.todo (Debug.toString ("unhandled message", model, msg))
 
         Playing state ->
             case msg of
+                UrlChanged _ -> (model, Cmd.none)
                 LoadedGame (Ok history) ->
                     ( still <| Playing { state | history = history }
                     , Cmd.batch [ SS.poll LoadedGame state.conn history
