@@ -4,11 +4,17 @@
   <meta charset="UTF-8">
   <title>Main</title>
   <link rel="shortcut icon"type="image/x-icon" href="data:image/x-icon;,">
-  <script type="text/javascript" src="flag-setting.js"></script>
   <script type="text/javascript" src="bundle.js"></script>
 </head>
 
 <body>
-  <div id="elm"></div>
+  <script type="text/javascript">
+    Elm.Main.init({
+      flags: {
+          stateServerRoot: "http://example.com/stateserver/",
+          appRoot: "/example/path/routing/to/this/file",
+      },
+    });
+  </script>
 </body>
 </html>
