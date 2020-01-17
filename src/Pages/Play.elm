@@ -96,8 +96,15 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+  let
+    retryButton : Html Msg
+    retryButton = button [ style "background-color" "red", onClick Poll ] [text "Reconnect"]
+  in
   case model.history of
-   Nothing -> text "loading..."
+   Nothing ->
+       if model.polling
+           then text "loading..."
+           else div [] [ text "Loading failed. ", retryButton ]
    Just history ->
     let
         nMoves = model.freezeFrame |> Maybe.withDefault (List.length history.moves)
@@ -110,7 +117,7 @@ view model =
                 , text <| " Time step " ++ (String.fromInt (nMoves+1)) ++ "/" ++ (String.fromInt <| List.length history.moves + 1 ) ++ " "
                 , button [Attrs.disabled <| nMoves == List.length history.moves, onClick <| SetFreezeFrame <| Just (nMoves+1)] [text ">"]
                 , button [Attrs.disabled (model.freezeFrame==Nothing), onClick <| SetFreezeFrame Nothing] [text "Unfreeze"]
-                , if model.polling then text "" else button [ style "background-color" "red", onClick Poll ] [text "Reconnect"]
+                , if model.polling then text "" else retryButton
                 ]
             , viewGame (model.polling && not (isOver game) && (model.freezeFrame==Nothing) && model.player == currentPlayer game) model.player effectiveHistory
             , text "Moves:"
