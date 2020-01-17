@@ -43,3 +43,9 @@ update msg conn old new =
         , body = Http.jsonBody <| E.object [("old", conn.encode old), ("new", conn.encode new)]
         , expect = Http.expectJson msg (D.field "current_state" conn.decoder)
         }
+
+pollOrGet : (Result Http.Error a -> msg) -> Connection a -> Maybe a -> Cmd msg
+pollOrGet msg conn current =
+    case current of
+        Nothing -> get msg conn
+        Just x -> poll msg conn x
