@@ -27,4 +27,10 @@ toRoute appRoot url =
                 then String.dropLeft (String.length appRoot) url.path
                 else url.path
     in
-    Maybe.withDefault NotFound (parse route {url | path = strippedPath})
+        case url.fragment |> Maybe.map (String.split "/") of
+            Nothing ->
+                Maybe.withDefault NotFound (parse route {url | path = strippedPath})
+            Just [] -> Home
+            Just [gid] -> Game gid Nothing
+            Just [gid, pid] -> Game gid (Just pid)
+            Just _ -> NotFound
