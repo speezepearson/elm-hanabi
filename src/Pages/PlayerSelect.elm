@@ -1,4 +1,4 @@
-module Hanabi.MVC.Pages.PlayerSelect exposing
+module Pages.PlayerSelect exposing
     ( Model
     , Msg(..)
     , init
@@ -13,7 +13,7 @@ import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (Player)
 import Hanabi.MVC.API exposing (conn)
 
-import Hanabi.MVC.Pages.Routes as Routes exposing (Escaped(..), PlayerSelectPageFlags)
+import Pages.Routes as Routes exposing (Escaped(..), PlayerSelectPageFlags)
 
 import StateServer as SS
 import Flags exposing (Flags)

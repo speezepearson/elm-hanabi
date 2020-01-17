@@ -1,4 +1,4 @@
-module Hanabi.MVC.Pages.Play exposing
+module Pages.Play exposing
     ( Model
     , Msg(..)
     , init
@@ -17,7 +17,7 @@ import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Ca
 import Hanabi.MVC.Core exposing (..)
 import Hanabi.MVC.API exposing (conn)
 
-import Hanabi.MVC.Pages.Routes as Routes exposing (Escaped(..), PlayPageFlags)
+import Pages.Routes as Routes exposing (Escaped(..), PlayPageFlags)
 
 import StateServer as SS
 import Flags exposing (Flags)

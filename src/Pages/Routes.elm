@@ -1,4 +1,4 @@
-module Hanabi.MVC.Pages.Routes exposing
+module Pages.Routes exposing
     ( HomePageFlags
     , PlayerSelectPageFlags
     , PlayPageFlags

@@ -11,7 +11,7 @@ import Hanabi.MVC.Core exposing (Msg(..), User, AppModel, PageModel(..))
 import Hanabi.MVC.View exposing (view)
 import Flags exposing (Flags)
 
-import Hanabi.MVC.Pages.Meta as Meta
+import Pages.Meta as Meta
 
 main = Meta.main
 

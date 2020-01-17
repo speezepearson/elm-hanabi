@@ -1,4 +1,4 @@
-module Hanabi.MVC.Pages.Meta exposing
+module Pages.Meta exposing
     ( Model
     , Msg(..)
     , init
@@ -12,10 +12,10 @@ import Browser.Navigation as Nav
 import Html exposing (Html)
 import Url
 
-import Hanabi.MVC.Pages.Home as Home
-import Hanabi.MVC.Pages.PlayerSelect as PlayerSelect
-import Hanabi.MVC.Pages.Play as Play
-import Hanabi.MVC.Pages.Routes as Routes
+import Pages.Home as Home
+import Pages.PlayerSelect as PlayerSelect
+import Pages.Play as Play
+import Pages.Routes as Routes
 import Flags exposing (Flags)
 
 type alias Model =

@@ -1,4 +1,4 @@
-module Hanabi.MVC.Pages.Home exposing
+module Pages.Home exposing
     ( Model
     , Msg(..)
     , init
@@ -19,7 +19,7 @@ import Hanabi.MVC.Core exposing (..)
 import Hanabi.MVC.API exposing (conn)
 import StateServer as SS
 import Flags exposing (Flags)
-import Hanabi.MVC.Pages.Routes as Routes exposing (Escaped(..), HomePageFlags)
+import Pages.Routes as Routes exposing (Escaped(..), HomePageFlags)
 
 type alias Model =
     { flags : Flags
