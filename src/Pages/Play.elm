@@ -35,7 +35,7 @@ type alias Model =
 type Msg
     = MakeMove Move
     | SetFreezeFrame (Maybe TimeStep)
-    | LoadedGame (Result Http.Error History)
+    | LoadedGame (Result Http.Error (Maybe History))
     | MadeMove
     | Poll
 
@@ -52,27 +52,32 @@ init flags pageFlags =
     , SS.get LoadedGame (conn flags.stateServerRoot pageFlags.gameId)
     )
 
-update : Msg -> Model -> Escaped  (Model, Cmd Msg)
+update : Msg -> Model -> Escaped (Model, Cmd Msg)
 update msg model =
     let
         connection = conn model.flags.stateServerRoot model.gameId
     in
-    Stay <|
     case msg of
-        LoadedGame (Ok history) ->
-            ( { model | history = Just  history }
-            , SS.poll LoadedGame connection history
+        LoadedGame (Ok (Just history)) ->
+            Stay <|
+            ( { model | history = Just history }
+            , SS.poll LoadedGame connection (Just history)
             )
+        LoadedGame (Ok Nothing) ->
+            Escape Routes.Home
 
         LoadedGame (Err e) ->
+            Stay <|
             ( { model | polling = False }
             , Cmd.none
             )
         SetFreezeFrame t ->
+            Stay <|
             ( { model | freezeFrame = t }
             , Cmd.none
             )
         MakeMove move ->
+            Stay <|
             case model.history of
                 Nothing -> Debug.todo "got MakeMove before history loaded!?"
                 Just oldHistory ->
@@ -80,16 +85,18 @@ update msg model =
                         newHistory = { oldHistory | moves = oldHistory.moves ++ [move] }
                     in
                         ( { model | history = Just newHistory }
-                        , SS.update (always MadeMove) connection oldHistory newHistory
+                        , SS.update (always MadeMove) connection (Just oldHistory) (Just newHistory)
                         )
         MadeMove ->
+            Stay <|
             ( model
             , Cmd.none
             )
 
         Poll ->
+            Stay <|
             ( { model | polling = True }
-            , SS.pollOrGet LoadedGame connection model.history
+            , SS.poll LoadedGame connection model.history
             )
 
 

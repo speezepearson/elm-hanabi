@@ -9,7 +9,7 @@ import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (GameState, Player, Move)
 import StateServer as SS
 
-type alias Connection = SS.Connection History
+type alias Connection = SS.Connection (Maybe History)
 
 type alias TimeStep = Int
 type alias LoadingIntention = History -> (AppModel, Cmd Msg)

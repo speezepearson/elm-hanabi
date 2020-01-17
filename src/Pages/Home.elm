@@ -31,7 +31,7 @@ type Msg
     = SetPlayers (List String)
     | SetGameId String
     | Join
-    | LoadedGame (Result Http.Error History)
+    | LoadedGame (Result Http.Error (Maybe History))
     | Create
     | RandomGameGenerated GameState
 
@@ -74,7 +74,7 @@ update msg model =
         RandomGameGenerated g ->
             Stay <|
             ( model
-            , SS.create LoadedGame connection {init=g, moves=[]}
+            , SS.create LoadedGame connection (Just {init=g, moves=[]})
             )
         LoadedGame (Ok _) ->
             Escape (Routes.PlayerSelect {gameId=model.gameId})

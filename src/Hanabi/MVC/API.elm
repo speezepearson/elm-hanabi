@@ -68,11 +68,14 @@ moveDecoder =
         , D.map2 HintRank (D.field "hint" D.string) (D.field "rank" D.int)
         ]
 
-encodeHistory : History -> E.Value
+encodeHistory : Maybe History -> E.Value
 encodeHistory history =
-    E.object [("init", encodeGameState history.init), ("moves", E.list encodeMove history.moves)]
-historyDecoder : D.Decoder History
+    case history of
+        Nothing -> E.null
+        Just h -> E.object [("init", encodeGameState h.init), ("moves", E.list encodeMove h.moves)]
+historyDecoder : D.Decoder (Maybe History)
 historyDecoder =
+    D.maybe <|
     D.map2 History
         (D.field "init" gameStateDecoder)
         (D.field "moves" <| D.list moveDecoder)

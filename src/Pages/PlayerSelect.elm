@@ -7,6 +7,7 @@ module Pages.PlayerSelect exposing
     )
 
 import Html exposing (Html, div, button, text)
+import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
 import Hanabi.Assistance exposing (History)
@@ -23,11 +24,13 @@ type alias Model =
     { flags : Flags
     , gameId : SS.Name
     , players : Maybe (List Player)
+    , polling : Bool
     }
 
 type Msg
     = SetPlayer Player
-    | LoadedGame (Result Http.Error History)
+    | LoadedGame (Result Http.Error (Maybe History))
+    | Poll
 
 
 init : Flags -> PlayerSelectPageFlags -> (Model, Cmd Msg)
@@ -35,6 +38,7 @@ init flags pageFlags =
     ( { flags = flags
       , gameId = pageFlags.gameId
       , players = Nothing
+      , polling = True
       }
     , SS.get LoadedGame (conn flags.stateServerRoot pageFlags.gameId)
     )
@@ -45,24 +49,39 @@ update msg model =
         connection = conn model.flags.stateServerRoot model.gameId
     in
     case msg of
-        LoadedGame (Ok history) ->
+        LoadedGame (Ok (Just history)) ->
             Stay <|
-            ( { model | players = Just history.init.players }
+            ( { model | players = Just history.init.players, polling = False }
             , Cmd.none
             )
 
+        LoadedGame (Ok Nothing) ->
+            Escape Routes.Home
+
         LoadedGame (Err e) ->
-            Debug.todo "loading failed"
+            Stay <|
+            ( { model | polling = False }
+            , Cmd.none
+            )
 
         SetPlayer player ->
             Escape (Routes.Play {gameId=model.gameId, player=player})
+
+        Poll ->
+            Stay <|
+            ( { model | polling = True }
+            , SS.get LoadedGame connection
+            )
 
 
 
 view : Model -> Html Msg
 view model =
     case model.players of
-        Nothing -> text "loading..."
+        Nothing ->
+            if model.polling
+                then text "loading..."
+                else div [] [ text "Loading failed. ", button [ style "background-color" "red", onClick Poll ] [text "Reconnect"] ]
         Just players ->
             div []
                 (text "You are: " :: (players
