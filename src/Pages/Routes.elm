@@ -1,6 +1,5 @@
 module Pages.Routes exposing
-    ( HomePageFlags
-    , PlayerSelectPageFlags
+    ( PlayerSelectPageFlags
     , PlayPageFlags
     , Escaped(..)
     , Route(..)
@@ -12,7 +11,6 @@ import Url.Parser as UP exposing ((</>))
 import StateServer as SS
 import Hanabi.Core exposing (Player)
 
-type alias HomePageFlags = {}
 type alias PlayerSelectPageFlags = {gameId : SS.Name}
 type alias PlayPageFlags = {gameId : SS.Name, player : Player}
 
@@ -22,7 +20,7 @@ type Escaped a
 
 type Route
     = NotFound
-    | Home HomePageFlags
+    | Home
     | PlayerSelect PlayerSelectPageFlags
     | Play PlayPageFlags
 
@@ -34,7 +32,7 @@ supplantPathFromFragment url =
 parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
-        [ UP.map (Home {}) UP.top
+        [ UP.map (Home) UP.top
         , UP.map (\gid -> PlayerSelect {gameId=gid}) (UP.s "game" </> UP.string)
         , UP.map (\gid pid -> Play {gameId=gid, player=pid}) (UP.s "game" </> UP.string </> UP.string)
         ]
@@ -52,6 +50,6 @@ toNavString route =
     "#" ++
     case route of
         NotFound -> ""
-        Home _ -> ""
+        Home -> ""
         PlayerSelect {gameId} -> "game/" ++ gameId
         Play {gameId, player} -> "game/" ++ gameId ++ "/" ++ player

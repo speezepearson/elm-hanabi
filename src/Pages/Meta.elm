@@ -42,7 +42,7 @@ type PageMsg
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    let (modelToWrap, cmdToWrap) = initWrapped flags url key
+    let (modelToWrap, cmdToWrap) = initWrapped flags (Routes.fromUrl url) key
     in
     ( { flags = flags
       , navKey = key
@@ -51,13 +51,17 @@ init flags url key =
     , Cmd.map PageMsg cmdToWrap
     )
 
-initWrapped : Flags -> Url.Url -> Nav.Key -> ( PageModel, Cmd PageMsg )
-initWrapped flags url key =
-    case Routes.fromUrl url of
-        Routes.NotFound -> Debug.todo "route not found"
-        Routes.Home pageFlags ->
+initWrapped : Flags -> Routes.Route -> Nav.Key -> ( PageModel, Cmd PageMsg )
+initWrapped flags route key =
+    case route of
+        Routes.NotFound ->
             let
-                (wrapped, cmd) = Home.init flags pageFlags
+                (wrapped, cmd) = Home.init flags
+            in
+                (HomeModel wrapped, Nav.pushUrl key (Routes.toNavString Routes.Home))
+        Routes.Home ->
+            let
+                (wrapped, cmd) = Home.init flags
             in
                 (HomeModel wrapped, Cmd.map HomeMsg cmd)
         Routes.PlayerSelect pageFlags ->

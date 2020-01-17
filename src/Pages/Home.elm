@@ -18,7 +18,7 @@ import Hanabi.Assistance exposing (History)
 import Hanabi.MVC.API exposing (conn)
 import StateServer as SS
 import Flags exposing (Flags)
-import Pages.Routes as Routes exposing (Escaped(..), HomePageFlags)
+import Pages.Routes as Routes exposing (Escaped(..))
 
 type alias Model =
     { flags : Flags
@@ -35,8 +35,8 @@ type Msg
     | Create
     | RandomGameGenerated GameState
 
-init : Flags -> HomePageFlags -> (Model, Cmd Msg)
-init flags _ =
+init : Flags -> (Model, Cmd Msg)
+init flags =
     ( { flags = flags
       , gameId = ""
       , players = []
