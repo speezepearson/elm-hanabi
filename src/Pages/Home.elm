@@ -7,15 +7,14 @@ module Pages.Home exposing
     )
 
 import Http
-import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br, pre)
+import Html exposing (Html, div, button, text, input, br)
 import Html.Attributes exposing (value, placeholder, style, disabled)
 import Html.Events exposing (onClick, onInput)
 import Url
 
-import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard, colors, ranks, randomGame)
+import Hanabi.Core exposing (GameState, randomGame)
 import Random
 import Hanabi.Assistance exposing (History)
-import Hanabi.MVC.Core exposing (..)
 import Hanabi.MVC.API exposing (conn)
 import StateServer as SS
 import Flags exposing (Flags)
