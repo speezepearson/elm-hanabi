@@ -6,11 +6,9 @@ module Hanabi.MVC.Pages.Home exposing
     , update
     )
 
-import Browser.Navigation as Nav
-
 import Http
 import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br, pre)
-import Html.Attributes as Attrs exposing (value, placeholder, style, disabled)
+import Html.Attributes exposing (value, placeholder, style, disabled)
 import Html.Events exposing (onClick, onInput)
 import Url
 

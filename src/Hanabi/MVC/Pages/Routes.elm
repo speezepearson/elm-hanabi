@@ -32,6 +32,6 @@ toNavString route =
     "#" ++
     case route of
         NotFound -> ""
-        Home {} -> ""
+        Home _ -> ""
         PlayerSelect {gameId} -> gameId
         Play {gameId, player} -> gameId ++ "/" ++ player

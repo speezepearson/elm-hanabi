@@ -6,15 +6,11 @@ module Hanabi.MVC.Pages.PlayerSelect exposing
     , update
     )
 
-import Browser.Navigation as Nav
-import Dict
-import Html exposing (Html, div, button, text, input, ul, li, span, table, tr, td, th, b, br, pre)
-import Html.Attributes as Attrs exposing (value, placeholder, style)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, div, button, text)
+import Html.Events exposing (onClick)
 
-import Hanabi.Assistance exposing (History, aggregateHints, AggregatedHints, decisions, run)
-import Hanabi.Core exposing (Hand, CardPosition, Move(..), Player, GameState, Card, isOver, posns, step, currentPlayer, getCard, colors, ranks)
-import Hanabi.MVC.Core exposing (..)
+import Hanabi.Assistance exposing (History)
+import Hanabi.Core exposing (Player)
 import Hanabi.MVC.API exposing (conn)
 
 import Hanabi.MVC.Pages.Routes as Routes exposing (Escaped(..), PlayerSelectPageFlags)

@@ -1,18 +1,14 @@
 import Browser
-import Browser.Navigation as Nav
 import Dict
 import Random
 import Url
 import Url.Builder
 
-import StateServer as SS
 import Hanabi.Assistance exposing (History, run)
 import Hanabi.Core exposing (randomGame, currentPlayer)
 import Hanabi.MVC.API exposing (conn)
 import Hanabi.MVC.Core exposing (Msg(..), User, AppModel, PageModel(..))
 import Hanabi.MVC.View exposing (view)
-import Ports exposing (notify)
-import Routes exposing (toRoute)
 import Flags exposing (Flags)
 
 import Hanabi.MVC.Pages.Meta as Meta
