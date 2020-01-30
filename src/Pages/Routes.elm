@@ -25,10 +25,6 @@ type Route
     | Play PlayPageFlags
 
 
-supplantPathFromFragment : Url.Url -> Url.Url
-supplantPathFromFragment url =
-    { url | path = url.fragment |> Maybe.withDefault "" }
-
 parser : UP.Parser (Route -> a) a
 parser =
     UP.oneOf
@@ -40,16 +36,14 @@ parser =
 fromUrl : Url.Url -> Route
 fromUrl url =
     url
-    |> supplantPathFromFragment
     |> Debug.log "parsing url"
     |> UP.parse parser
     |> Maybe.withDefault NotFound
 
 toNavString : Route -> String
 toNavString route =
-    "#" ++
     case route of
-        NotFound -> ""
-        Home -> ""
-        PlayerSelect {gameId} -> "game/" ++ gameId
-        Play {gameId, player} -> "game/" ++ gameId ++ "/" ++ player
+        NotFound -> "/"
+        Home -> "/"
+        PlayerSelect {gameId} -> "/game/" ++ gameId
+        Play {gameId, player} -> "/game/" ++ gameId ++ "/" ++ player
