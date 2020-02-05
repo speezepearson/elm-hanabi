@@ -2,21 +2,29 @@ module Hanabi.MVC.Core exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
+import Hanabi.Assistance exposing (History)
+import Hanabi.Core exposing (GameState, Move, Player)
 import Http
+import StateServer as SS
 import Url
 
-import Hanabi.Assistance exposing (History)
-import Hanabi.Core exposing (GameState, Player, Move)
-import StateServer as SS
 
-type alias Connection = SS.Connection (Maybe History)
+type alias Connection =
+    SS.Connection (Maybe History)
 
-type alias TimeStep = Int
-type alias LoadingIntention = History -> (AppModel, Cmd Msg)
+
+type alias TimeStep =
+    Int
+
+
+type alias LoadingIntention =
+    History -> ( AppModel, Cmd Msg )
+
 
 type alias User =
     { name : String
     }
+
 
 type alias AppModel =
     { navKey : Nav.Key
@@ -25,14 +33,17 @@ type alias AppModel =
     , page : PageModel
     }
 
-type PageModel
-    = Creating {gameId: SS.Name, players: String}
-    | LoadingGame { conn: Connection, intention : LoadingIntention }
-    | LoadingFailed { message : String, conn: Connection, intention : LoadingIntention }
-    | ChoosingPlayer {conn: Connection, history: History}
-    | Playing {conn: Connection, player: Player, history: History, freezeFrame: Maybe TimeStep, polling: Bool}
 
-type Msg
+type PageModel
+    = Creating { gameId : SS.Name, players : String }
+    | LoadingGame { conn : Connection, intention : LoadingIntention }
+    | LoadingFailed { message : String, conn : Connection, intention : LoadingIntention }
+    | ChoosingPlayer { conn : Connection, history : History }
+    | Playing { conn : Connection, player : Player, history : History, freezeFrame : Maybe TimeStep, polling : Bool }
+
+
+type
+    Msg
     -- Creating
     = SetPlayers String
     | SetGameId SS.Name
@@ -40,12 +51,12 @@ type Msg
     | Create
     | RandomGameGenerated GameState
     | NewGamePosted (Result Http.Error History)
-    -- ChoosingPlayer
+      -- ChoosingPlayer
     | SetPlayer Player
-    -- Playing
+      -- Playing
     | MakeMove Move
     | SetFreezeFrame (Maybe TimeStep)
-    -- Misc
+      -- Misc
     | RetryLoadGame
     | LoadedGame (Result Http.Error History)
     | MadeMove
