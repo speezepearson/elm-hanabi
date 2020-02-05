@@ -9,7 +9,7 @@ module Pages.Play exposing
 import Dict
 import Flags exposing (Flags)
 import Hanabi.Assistance exposing (AggregatedHints, History, aggregateHints, decisions, run)
-import Hanabi.Core exposing (Card, CardPosition, GameState, score, Hand, Move(..), Player, colors, currentPlayer, getCard, isOver, posns, ranks, step)
+import Hanabi.Core exposing (Card, CardPosition, GameState, Hand, Move(..), Player, colors, currentPlayer, getCard, isOver, posns, ranks, score, step)
 import Hanabi.MVC.API exposing (conn)
 import Hanabi.MVC.Core exposing (TimeStep)
 import Html exposing (Html, b, button, div, li, span, table, td, text, th, tr, ul)
@@ -164,11 +164,21 @@ view model =
 
 conciseHand : GameState -> Player -> String
 conciseHand g p =
-    g.hands
-        |> Dict.get p
-        |> Maybe.withDefault Dict.empty
-        |> Dict.values
-        |> List.map cardKey
+    let
+        hand : Dict.Dict CardPosition Card
+        hand =
+            g.hands
+                |> Dict.get p
+                |> Maybe.withDefault Dict.empty
+
+        stringForPosn : CardPosition -> String
+        stringForPosn posn =
+            Dict.get posn hand
+                |> Maybe.map cardKey
+                |> Maybe.withDefault "_"
+    in
+    posns (List.length <| g.players)
+        |> List.map stringForPosn
         |> String.join ", "
 
 
