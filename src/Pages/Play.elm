@@ -11,7 +11,7 @@ import Flags exposing (Flags)
 import Hanabi.Assistance exposing (AggregatedHints, History, aggregateHints, decisions, run)
 import Hanabi.Core exposing (Card, CardPosition, GameState, Hand, Move(..), Player, colors, currentPlayer, getCard, isOver, posns, ranks, step)
 import Hanabi.MVC.API exposing (conn)
-import Hanabi.MVC.Core exposing (..)
+import Hanabi.MVC.Core exposing (TimeStep)
 import Html exposing (Html, b, button, div, li, span, table, td, text, th, tr, ul)
 import Html.Attributes as Attrs exposing (style)
 import Html.Events exposing (onClick)
@@ -67,7 +67,7 @@ update msg model =
         LoadedGame (Ok Nothing) ->
             Escape Routes.Home
 
-        LoadedGame (Err e) ->
+        LoadedGame (Err _) ->
             Stay <|
                 ( { model | polling = False }
                 , Cmd.none

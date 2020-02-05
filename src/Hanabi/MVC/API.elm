@@ -3,10 +3,13 @@ module Hanabi.MVC.API exposing (..)
 import Dict
 import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (Card, GameState, Hand, Move(..))
-import Hanabi.MVC.Core exposing (Connection, Msg(..))
 import Json.Decode as D
 import Json.Encode as E
 import StateServer as SS
+
+
+type alias Connection =
+    SS.Connection (Maybe History)
 
 
 conn : String -> SS.Name -> Connection
@@ -43,9 +46,9 @@ encodeGameState g =
     E.object
         [ ( "nFuses", E.int g.nFuses )
         , ( "nHints", E.int g.nHints )
-        , ( "towers", E.object <| Dict.toList <| Dict.map (\c r -> E.int r) g.towers )
+        , ( "towers", E.object <| Dict.toList <| Dict.map (\_ r -> E.int r) g.towers )
         , ( "players", E.list E.string g.players )
-        , ( "hands", E.object <| Dict.toList <| Dict.map (\p h -> encodeHand h) g.hands )
+        , ( "hands", E.object <| Dict.toList <| Dict.map (\_ h -> encodeHand h) g.hands )
         , ( "deck", E.list encodeCard g.deck )
         , ( "discardPile", E.list encodeCard g.discardPile )
         , ( "movesLeft", Maybe.map E.int g.movesLeft |> Maybe.withDefault E.null )
