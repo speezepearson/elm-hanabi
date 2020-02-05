@@ -87,7 +87,7 @@ update msg model =
         LoadedGame (Ok _) ->
             Escape (Routes.PlayerSelect { gameId = model.gameId })
 
-        LoadedGame (Err err) ->
+        LoadedGame (Err _) ->
             Stay <|
                 ( { model | working = False }
                 , Cmd.none
@@ -101,7 +101,7 @@ view model =
         , input
             [ onInput SetGameId
             , value model.gameId
-            , placeholder "srpplayground"
+            , placeholder "someGameId"
             , disabled model.working
             ]
             []

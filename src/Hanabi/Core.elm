@@ -251,10 +251,10 @@ step move game =
                                     c :: game.discardPile
                     }
 
-            HintColor p c ->
+            HintColor _ _ ->
                 { game | nHints = game.nHints - 1 }
 
-            HintRank p c ->
+            HintRank _ _ ->
                 { game | nHints = game.nHints - 1 }
 
 

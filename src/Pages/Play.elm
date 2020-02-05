@@ -9,7 +9,7 @@ module Pages.Play exposing
 import Dict
 import Flags exposing (Flags)
 import Hanabi.Assistance exposing (AggregatedHints, History, aggregateHints, decisions, run)
-import Hanabi.Core exposing (Card, CardPosition, GameState, Hand, Move(..), Player, colors, currentPlayer, getCard, isOver, posns, ranks, step)
+import Hanabi.Core exposing (Card, CardPosition, GameState, score, Hand, Move(..), Player, colors, currentPlayer, getCard, isOver, posns, ranks, step)
 import Hanabi.MVC.API exposing (conn)
 import Hanabi.MVC.Core exposing (TimeStep)
 import Html exposing (Html, b, button, div, li, span, table, td, text, th, tr, ul)
@@ -376,7 +376,7 @@ viewGame interactive viewer history =
     ul []
         [ text <|
             if isOver game then
-                "Game over. "
+                "Game over. Final score: " ++ String.fromInt (score game)
 
             else
                 ""

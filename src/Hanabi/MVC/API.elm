@@ -57,7 +57,7 @@ encodeGameState g =
 
 gameStateDecoder : D.Decoder GameState
 gameStateDecoder =
-    D.map8 (\fus hin tow pla han dec dis msld -> { nFuses = fus, nHints = hin, towers = tow, players = pla, hands = han, deck = dec, discardPile = dis, movesLeft = msld })
+    D.map8 (\fus hin tow pla han dec dis moves -> { nFuses = fus, nHints = hin, towers = tow, players = pla, hands = han, deck = dec, discardPile = dis, movesLeft = moves })
         (D.field "nFuses" D.int)
         (D.field "nHints" D.int)
         (D.field "towers" <| D.dict D.int)

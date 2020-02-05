@@ -64,7 +64,7 @@ initWrapped flags route key =
     case route of
         Routes.NotFound ->
             let
-                ( wrapped, cmd ) =
+                ( wrapped, _ ) =
                     Home.init flags
             in
             ( HomeModel wrapped, Nav.pushUrl key (Routes.toNavString Routes.Home) )

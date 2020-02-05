@@ -59,7 +59,7 @@ update msg model =
         LoadedGame (Ok Nothing) ->
             Escape Routes.Home
 
-        LoadedGame (Err e) ->
+        LoadedGame (Err _) ->
             Stay <|
                 ( { model | polling = False }
                 , Cmd.none
