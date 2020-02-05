@@ -364,16 +364,6 @@ viewOtherHand history interactive player =
         |> table []
 
 
-isNothing : Maybe a -> Bool
-isNothing x =
-    case x of
-        Nothing ->
-            True
-
-        Just _ ->
-            False
-
-
 viewGame : Bool -> Player -> History -> Html Msg
 viewGame interactive viewer history =
     let
