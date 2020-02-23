@@ -8,14 +8,18 @@ import Json.Encode as E
 import StateServer as SS
 
 
+type alias ServerState =
+    Maybe History
+
+
 type alias Connection =
-    SS.Connection (Maybe History)
+    SS.Connection ServerState
 
 
 conn : String -> SS.Name -> Connection
 conn urlRoot name =
-    { encode = encodeHistory
-    , decoder = historyDecoder
+    { encode = Maybe.map encodeHistory >> Maybe.withDefault E.null
+    , decoder = D.maybe historyDecoder
     , name = name
     , urlRoot = urlRoot
     }
@@ -94,22 +98,16 @@ moveDecoder =
         ]
 
 
-encodeHistory : Maybe History -> E.Value
+encodeHistory : History -> E.Value
 encodeHistory history =
-    case history of
-        Nothing ->
-            E.null
-
-        Just h ->
-            E.object [ ( "init", encodeGameState h.init ), ( "moves", E.list encodeMove h.moves ) ]
+    E.object [ ( "init", encodeGameState history.init ), ( "moves", E.list encodeMove history.moves ) ]
 
 
-historyDecoder : D.Decoder (Maybe History)
+historyDecoder : D.Decoder History
 historyDecoder =
-    D.maybe <|
-        D.map2 History
-            (D.field "init" gameStateDecoder)
-            (D.field "moves" <| D.list moveDecoder)
+    D.map2 History
+        (D.field "init" gameStateDecoder)
+        (D.field "moves" <| D.list moveDecoder)
 
 
 mapValues : (a -> b) -> Dict.Dict k a -> Dict.Dict k b
