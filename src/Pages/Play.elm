@@ -17,6 +17,7 @@ import Html exposing (Html, b, button, div, li, span, table, td, text, th, tr, u
 import Html.Attributes as Attrs exposing (style)
 import Html.Events exposing (onClick)
 import Http
+import List.Extra
 import Pages.Routes as Routes exposing (PlayPageFlags)
 import StateServer as SS
 
@@ -252,14 +253,29 @@ cardKey { color, rank } =
     color ++ String.fromInt rank
 
 
-viewHands : Player -> Bool -> History -> Html Msg
-viewHands player interactive history =
+viewOtherHands : Player -> Bool -> History -> Html Msg
+viewOtherHands player interactive history =
     let
         active =
             currentPlayer (run history)
 
+        otherPlayers : List Player
+        otherPlayers =
+            let
+                playerIndex : Int
+                playerIndex =
+                    case List.Extra.elemIndex player history.init.players of
+                        Just i ->
+                            i
+
+                        Nothing ->
+                            Debug.todo "trying to view game from hand of nonexistent player"
+            in
+            (history.init.players |> List.drop (playerIndex + 1))
+                ++ List.take playerIndex history.init.players
+
         headers =
-            history.init.players
+            otherPlayers
                 |> List.map
                     (\p ->
                         th []
@@ -275,16 +291,11 @@ viewHands player interactive history =
                     )
 
         cells =
-            history.init.players
+            otherPlayers
                 |> List.map
                     (\p ->
                         td []
-                            [ (if p == player then
-                                viewOwnHand
-
-                               else
-                                viewOtherHand
-                              )
+                            [ viewOtherHand
                                 history
                                 interactive
                                 p
@@ -332,7 +343,7 @@ viewOwnHand history interactive player =
                         tr [] [ td [] [ text "__" ], td [] [ text "__" ] ]
             )
         |> (\rows -> [ tr [] [ th [] [ text "Actions" ], th [] [ text "Options" ] ] ] ++ rows)
-        |> table []
+        |> table [ Attrs.attribute "border" "1px solid black" ]
 
 
 viewOtherHand : History -> Bool -> Player -> Html Msg
@@ -398,7 +409,8 @@ viewGame interactive viewer history =
                 )
             ]
         , li [] [ text "Towers: ", game.towers |> Dict.toList |> List.map (\( c, r ) -> c ++ String.fromInt r) |> String.join ", " |> text ]
-        , li [] [ viewHands viewer interactive history ]
+        , li [] [ viewOwnHand history interactive viewer ]
+        , li [] [ viewOtherHands viewer interactive history ]
         , li [] [ text "Discarded:", viewCardCountingTable game.discardPile ]
         , li [] [ text "Unseen cards: ", viewCardCountingTable unseenCards ]
         ]
