@@ -17,18 +17,16 @@ import Pages.PlayerSelect as PlayerSelect
 import Pages.Routes as Routes
 import Url
 
-
 type alias Model =
     { flags : Flags
     , navKey : Nav.Key
     , pageModel : PageModel
-
-    -- , numPageTransitions : Int -- TODO: to keep pages from issuing commands that are obeyed across transitions
+    , numPageTransitions : Int -- TODO: to keep pages from issuing commands that are obeyed across transitions
     }
 
 
 type Msg
-    = WrappedMsg PageMsg -- WrappedMsg {pageMsg: PageMsg, numPageTransitions} -- TODO: to keep pages from issuing commands that are obeyed across transitions
+    = WrappedMsg {numPageTransitions: Int, pageMsg: PageMsg}
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -46,21 +44,33 @@ type PageMsg
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
+init = initWithNumPageTransitions 0
+
+initWithNumPageTransitions : Int -> Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+initWithNumPageTransitions numPageTransitions flags url key =
     let
         ( modelToWrap, cmdToWrap ) =
-            initWrapped flags (Routes.fromUrl url) key
+            initPage flags (Routes.fromUrl url) key
+        model = wrapPageModel numPageTransitions flags key modelToWrap
     in
-    ( { flags = flags
-      , navKey = key
-      , pageModel = modelToWrap
-      }
-    , Cmd.map WrappedMsg cmdToWrap
+    ( model
+    , Cmd.map (wrapPageMsg model) cmdToWrap
     )
 
+wrapPageModel : Int -> Flags -> Nav.Key -> PageModel -> Model
+wrapPageModel numPageTransitions flags key modelToWrap =
+    { flags = flags
+    , navKey = key
+    , pageModel = modelToWrap
+    , numPageTransitions = numPageTransitions
+    }
 
-initWrapped : Flags -> Routes.Route -> Nav.Key -> ( PageModel, Cmd PageMsg )
-initWrapped flags route key =
+wrapPageMsg : Model -> PageMsg -> Msg
+wrapPageMsg model msg =
+    WrappedMsg {numPageTransitions=model.numPageTransitions, pageMsg=msg}
+
+initPage : Flags -> Routes.Route -> Nav.Key -> ( PageModel, Cmd PageMsg )
+initPage flags route key =
     case route of
         Routes.NotFound ->
             let
@@ -95,44 +105,61 @@ view : Model -> Html Msg
 view model =
     case model.pageModel of
         HomeModel wrapped ->
-            Html.map (WrappedMsg << HomeMsg) <| Home.view wrapped
+            Html.map (wrapPageMsg model << HomeMsg) <| Home.view wrapped
 
         PlayerSelectModel wrapped ->
-            Html.map (WrappedMsg << PlayerSelectMsg) <| PlayerSelect.view wrapped
+            Html.map (wrapPageMsg model << PlayerSelectMsg) <| PlayerSelect.view wrapped
 
         PlayModel wrapped ->
-            Html.map (WrappedMsg << PlayMsg) <| Play.view wrapped
+            Html.map (wrapPageMsg model << PlayMsg) <| Play.view wrapped
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update metaMsg metaModel =
-    case ( metaModel.pageModel, metaMsg ) of
-        ( HomeModel model, WrappedMsg (HomeMsg msg) ) ->
-            let (newModel, cmd) = Home.update msg model
-            in
-                    ( { metaModel | pageModel = HomeModel newModel }, Cmd.map (WrappedMsg << HomeMsg) cmd )
+    case metaMsg of
 
-        ( PlayerSelectModel model, WrappedMsg (PlayerSelectMsg msg) ) ->
-            let (newModel, cmd) = PlayerSelect.update msg model
-            in
-                    ( { metaModel | pageModel = PlayerSelectModel newModel }, Cmd.map (WrappedMsg << PlayerSelectMsg) cmd )
-
-        ( PlayModel model, WrappedMsg (PlayMsg msg) ) ->
-            let (newModel, cmd) = Play.update msg model
-            in
-                    ( { metaModel | pageModel = PlayModel newModel }, Cmd.map (WrappedMsg << PlayMsg) cmd )
-
-        ( _, UrlRequested request ) ->
+        UrlRequested request ->
             Debug.todo <| "not sure what to do with url request: " ++ Debug.toString request
 
-        ( _, UrlChanged url ) ->
-            init metaModel.flags url metaModel.navKey
+        UrlChanged url ->
+            initWithNumPageTransitions (metaModel.numPageTransitions+1) metaModel.flags url metaModel.navKey
+
+        WrappedMsg {numPageTransitions, pageMsg} ->
+            if numPageTransitions < metaModel.numPageTransitions
+                then (metaModel, Cmd.none)
+                else let (newPageModel, pageCmd) = updatePage metaModel.pageModel pageMsg in
+                    ( { metaModel | pageModel = newPageModel}
+                    , Cmd.map (wrapPageMsg metaModel) pageCmd
+                    )
+
+updatePage : PageModel -> PageMsg -> (PageModel, Cmd PageMsg)
+updatePage pageModel pageMsg =
+    case (pageModel, pageMsg) of
+        ( HomeModel model, HomeMsg msg ) ->
+            let (newModel, cmd) = Home.update msg model
+            in
+                ( HomeModel newModel
+                , Cmd.map HomeMsg cmd
+                )
+
+        ( PlayerSelectModel model, PlayerSelectMsg msg ) ->
+            let (newModel, cmd) = PlayerSelect.update msg model
+            in
+                ( PlayerSelectModel newModel
+                , Cmd.map PlayerSelectMsg cmd
+                )
+
+        ( PlayModel model, PlayMsg msg ) ->
+            let (newModel, cmd) = Play.update msg model
+            in
+                ( PlayModel newModel
+                , Cmd.map PlayMsg cmd
+                )
 
         ( _, _ ) ->
-            Debug.log ("ignoring msg: " ++ Debug.toString metaMsg) <|
-                Debug.log ("...in state: " ++ Debug.toString metaModel) <|
-                    ( metaModel, Cmd.none )
-
+            Debug.log ("ignoring msg: " ++ Debug.toString pageMsg) <|
+                Debug.log ("...in state: " ++ Debug.toString pageModel) <|
+                    ( pageModel, Cmd.none )
 
 main =
     Browser.application
