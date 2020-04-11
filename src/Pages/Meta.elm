@@ -28,7 +28,7 @@ type alias Model =
 
 
 type Msg
-    = PageMsg PageMsg -- PageMsg {pageMsg: PageMsg, numPageTransitions} -- TODO: to keep pages from issuing commands that are obeyed across transitions
+    = WrappedMsg PageMsg -- WrappedMsg {pageMsg: PageMsg, numPageTransitions} -- TODO: to keep pages from issuing commands that are obeyed across transitions
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -55,7 +55,7 @@ init flags url key =
       , navKey = key
       , pageModel = modelToWrap
       }
-    , Cmd.map PageMsg cmdToWrap
+    , Cmd.map WrappedMsg cmdToWrap
     )
 
 
@@ -95,32 +95,32 @@ view : Model -> Html Msg
 view model =
     case model.pageModel of
         HomeModel wrapped ->
-            Html.map (PageMsg << HomeMsg) <| Home.view wrapped
+            Html.map (WrappedMsg << HomeMsg) <| Home.view wrapped
 
         PlayerSelectModel wrapped ->
-            Html.map (PageMsg << PlayerSelectMsg) <| PlayerSelect.view wrapped
+            Html.map (WrappedMsg << PlayerSelectMsg) <| PlayerSelect.view wrapped
 
         PlayModel wrapped ->
-            Html.map (PageMsg << PlayMsg) <| Play.view wrapped
+            Html.map (WrappedMsg << PlayMsg) <| Play.view wrapped
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update metaMsg metaModel =
     case ( metaModel.pageModel, metaMsg ) of
-        ( HomeModel model, PageMsg (HomeMsg msg) ) ->
+        ( HomeModel model, WrappedMsg (HomeMsg msg) ) ->
             let (newModel, cmd) = Home.update msg model
             in
-                    ( { metaModel | pageModel = HomeModel newModel }, Cmd.map (PageMsg << HomeMsg) cmd )
+                    ( { metaModel | pageModel = HomeModel newModel }, Cmd.map (WrappedMsg << HomeMsg) cmd )
 
-        ( PlayerSelectModel model, PageMsg (PlayerSelectMsg msg) ) ->
+        ( PlayerSelectModel model, WrappedMsg (PlayerSelectMsg msg) ) ->
             let (newModel, cmd) = PlayerSelect.update msg model
             in
-                    ( { metaModel | pageModel = PlayerSelectModel newModel }, Cmd.map (PageMsg << PlayerSelectMsg) cmd )
+                    ( { metaModel | pageModel = PlayerSelectModel newModel }, Cmd.map (WrappedMsg << PlayerSelectMsg) cmd )
 
-        ( PlayModel model, PageMsg (PlayMsg msg) ) ->
+        ( PlayModel model, WrappedMsg (PlayMsg msg) ) ->
             let (newModel, cmd) = Play.update msg model
             in
-                    ( { metaModel | pageModel = PlayModel newModel }, Cmd.map (PageMsg << PlayMsg) cmd )
+                    ( { metaModel | pageModel = PlayModel newModel }, Cmd.map (WrappedMsg << PlayMsg) cmd )
 
         ( _, UrlRequested request ) ->
             Debug.todo <| "not sure what to do with url request: " ++ Debug.toString request
