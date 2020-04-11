@@ -151,7 +151,7 @@ view model =
                     |> List.indexedMap
                         (\i ( g, m ) ->
                             tr []
-                                [ td [] [ button [ onClick <| SetFreezeFrame <| Just i ] [ text "Context" ] ]
+                                [ td [] [ button [ onClick <| SetFreezeFrame <| Just i ] [ text <| "Context (t=" ++ String.fromInt (i+1) ++ ")" ] ]
                                 , td [] [ text <| currentPlayer g ]
                                 , td [] [ viewMove model.player g m ]
                                 , td [] [ button [ onClick <| SetFreezeFrame <| Just (i + 1) ] [ text "Result" ] ]
