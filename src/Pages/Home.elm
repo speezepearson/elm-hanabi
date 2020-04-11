@@ -6,6 +6,7 @@ module Pages.Home exposing
     , view
     )
 
+import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (GameState, randomGame)
@@ -14,7 +15,7 @@ import Html exposing (Html, br, button, div, input, text)
 import Html.Attributes exposing (disabled, placeholder, value)
 import Html.Events exposing (onClick, onInput)
 import Http
-import Pages.Routes as Routes exposing (Escaped(..))
+import Pages.Routes as Routes
 import Random
 import StateServer as SS
 
@@ -24,6 +25,7 @@ type alias Model =
     , gameId : SS.Name
     , players : List String
     , working : Bool
+    , navKey : Nav.Key
     }
 
 
@@ -36,18 +38,19 @@ type Msg
     | RandomGameGenerated GameState
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
+init : Flags -> Nav.Key -> ( Model, Cmd Msg )
+init flags key =
     ( { flags = flags
       , gameId = ""
       , players = []
       , working = False
+      , navKey = key
       }
     , Cmd.none
     )
 
 
-update : Msg -> Model -> Escaped ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         connection =
@@ -55,40 +58,36 @@ update msg model =
     in
     case msg of
         SetPlayers players ->
-            Stay <|
                 ( { model | players = players }
                 , Cmd.none
                 )
 
         SetGameId gameId ->
-            Stay <|
                 ( { model | gameId = gameId }
                 , Cmd.none
                 )
 
         Join ->
-            Stay <|
                 ( model
                 , SS.get LoadedGame connection
                 )
 
         Create ->
-            Stay <|
                 ( model
                 , Random.generate RandomGameGenerated (randomGame model.players)
                 )
 
         RandomGameGenerated g ->
-            Stay <|
                 ( model
                 , SS.create LoadedGame connection (Just { init = g, moves = [] })
                 )
 
         LoadedGame (Ok _) ->
-            Escape (Routes.PlayerSelect { gameId = model.gameId })
+            ( model
+            , Nav.pushUrl model.navKey <| Routes.toNavString <| Routes.PlayerSelect { gameId = model.gameId }
+            )
 
         LoadedGame (Err _) ->
-            Stay <|
                 ( { model | working = False }
                 , Cmd.none
                 )

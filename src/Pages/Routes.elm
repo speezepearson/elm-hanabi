@@ -1,6 +1,5 @@
 module Pages.Routes exposing
-    ( Escaped(..)
-    , PlayPageFlags
+    ( PlayPageFlags
     , PlayerSelectPageFlags
     , Route(..)
     , fromUrl
@@ -19,11 +18,6 @@ type alias PlayerSelectPageFlags =
 
 type alias PlayPageFlags =
     { gameId : SS.Name, player : Player }
-
-
-type Escaped a
-    = Escape Route
-    | Stay a
 
 
 type Route

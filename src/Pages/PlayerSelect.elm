@@ -6,6 +6,7 @@ module Pages.PlayerSelect exposing
     , view
     )
 
+import Browser.Navigation as Nav
 import Flags exposing (Flags)
 import Hanabi.Assistance exposing (History)
 import Hanabi.Core exposing (Player)
@@ -14,7 +15,7 @@ import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 import Http
-import Pages.Routes as Routes exposing (Escaped(..), PlayerSelectPageFlags)
+import Pages.Routes as Routes exposing (PlayerSelectPageFlags)
 import StateServer as SS
 
 
@@ -23,6 +24,7 @@ type alias Model =
     , gameId : SS.Name
     , players : Maybe (List Player)
     , polling : Bool
+    , navKey : Nav.Key
     }
 
 
@@ -32,18 +34,19 @@ type Msg
     | Poll
 
 
-init : Flags -> PlayerSelectPageFlags -> ( Model, Cmd Msg )
-init flags pageFlags =
+init : Flags -> Nav.Key -> PlayerSelectPageFlags -> ( Model, Cmd Msg )
+init flags key pageFlags =
     ( { flags = flags
       , gameId = pageFlags.gameId
       , players = Nothing
       , polling = True
+      , navKey = key
       }
     , SS.get LoadedGame (conn flags.stateServerRoot pageFlags.gameId)
     )
 
 
-update : Msg -> Model -> Escaped ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         connection =
@@ -51,25 +54,24 @@ update msg model =
     in
     case msg of
         LoadedGame (Ok (Just history)) ->
-            Stay <|
                 ( { model | players = Just history.init.players, polling = False }
                 , Cmd.none
                 )
 
         LoadedGame (Ok Nothing) ->
-            Escape Routes.Home
+            (model, Nav.pushUrl model.navKey <| Routes.toNavString <| Routes.Home)
 
         LoadedGame (Err _) ->
-            Stay <|
                 ( { model | polling = False }
                 , Cmd.none
                 )
 
         SetPlayer player ->
-            Escape (Routes.Play { gameId = model.gameId, player = player })
+            ( model
+            , Nav.pushUrl model.navKey <| Routes.toNavString <| Routes.Play { gameId = model.gameId, player = player }
+            )
 
         Poll ->
-            Stay <|
                 ( { model | polling = True }
                 , SS.get LoadedGame connection
                 )

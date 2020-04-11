@@ -6,6 +6,7 @@ module Pages.Play exposing
     , view
     )
 
+import Browser.Navigation as Nav
 import Dict
 import Flags exposing (Flags)
 import Hanabi.Assistance exposing (AggregatedHints, History, aggregateHints, decisions, run)
@@ -16,7 +17,7 @@ import Html exposing (Html, b, button, div, li, span, table, td, text, th, tr, u
 import Html.Attributes as Attrs exposing (style)
 import Html.Events exposing (onClick)
 import Http
-import Pages.Routes as Routes exposing (Escaped(..), PlayPageFlags)
+import Pages.Routes as Routes exposing (PlayPageFlags)
 import StateServer as SS
 
 
@@ -27,6 +28,7 @@ type alias Model =
     , history : Maybe History
     , freezeFrame : Maybe TimeStep
     , polling : Bool
+    , navKey : Nav.Key
     }
 
 
@@ -38,20 +40,21 @@ type Msg
     | Poll
 
 
-init : Flags -> PlayPageFlags -> ( Model, Cmd Msg )
-init flags pageFlags =
+init : Flags -> Nav.Key -> PlayPageFlags -> ( Model, Cmd Msg )
+init flags key pageFlags =
     ( { flags = flags
       , gameId = pageFlags.gameId
       , player = pageFlags.player
       , history = Nothing
       , freezeFrame = Nothing
       , polling = True
+      , navKey = key
       }
     , SS.get LoadedGame (conn flags.stateServerRoot pageFlags.gameId)
     )
 
 
-update : Msg -> Model -> Escaped ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         connection =
@@ -59,28 +62,24 @@ update msg model =
     in
     case msg of
         LoadedGame (Ok (Just history)) ->
-            Stay <|
                 ( { model | history = Just history }
                 , SS.poll LoadedGame connection (Just history)
                 )
 
         LoadedGame (Ok Nothing) ->
-            Escape Routes.Home
+            ({model | polling = False}, Cmd.none)
 
         LoadedGame (Err _) ->
-            Stay <|
                 ( { model | polling = False }
                 , Cmd.none
                 )
 
         SetFreezeFrame t ->
-            Stay <|
                 ( { model | freezeFrame = t }
                 , Cmd.none
                 )
 
         MakeMove move ->
-            Stay <|
                 case model.history of
                     Nothing ->
                         Debug.todo "got MakeMove before history loaded!?"
@@ -95,13 +94,11 @@ update msg model =
                         )
 
         MadeMove ->
-            Stay <|
                 ( model
                 , Cmd.none
                 )
 
         Poll ->
-            Stay <|
                 ( { model | polling = True }
                 , SS.poll LoadedGame connection model.history
                 )

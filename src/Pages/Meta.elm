@@ -65,28 +65,28 @@ initWrapped flags route key =
         Routes.NotFound ->
             let
                 ( wrapped, _ ) =
-                    Home.init flags
+                    Home.init flags key
             in
             ( HomeModel wrapped, Nav.pushUrl key (Routes.toNavString Routes.Home) )
 
         Routes.Home ->
             let
                 ( wrapped, cmd ) =
-                    Home.init flags
+                    Home.init flags key
             in
             ( HomeModel wrapped, Cmd.map HomeMsg cmd )
 
         Routes.PlayerSelect pageFlags ->
             let
                 ( wrapped, cmd ) =
-                    PlayerSelect.init flags pageFlags
+                    PlayerSelect.init flags key pageFlags
             in
             ( PlayerSelectModel wrapped, Cmd.map PlayerSelectMsg cmd )
 
         Routes.Play pageFlags ->
             let
                 ( wrapped, cmd ) =
-                    Play.init flags pageFlags
+                    Play.init flags key pageFlags
             in
             ( PlayModel wrapped, Cmd.map PlayMsg cmd )
 
@@ -108,28 +108,19 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update metaMsg metaModel =
     case ( metaModel.pageModel, metaMsg ) of
         ( HomeModel model, PageMsg (HomeMsg msg) ) ->
-            case Home.update msg model of
-                Routes.Stay ( newModel, cmd ) ->
+            let (newModel, cmd) = Home.update msg model
+            in
                     ( { metaModel | pageModel = HomeModel newModel }, Cmd.map (PageMsg << HomeMsg) cmd )
 
-                Routes.Escape route ->
-                    ( metaModel, Nav.pushUrl metaModel.navKey (Routes.toNavString route) )
-
         ( PlayerSelectModel model, PageMsg (PlayerSelectMsg msg) ) ->
-            case PlayerSelect.update msg model of
-                Routes.Stay ( newModel, cmd ) ->
+            let (newModel, cmd) = PlayerSelect.update msg model
+            in
                     ( { metaModel | pageModel = PlayerSelectModel newModel }, Cmd.map (PageMsg << PlayerSelectMsg) cmd )
 
-                Routes.Escape route ->
-                    ( metaModel, Nav.pushUrl metaModel.navKey (Routes.toNavString route) )
-
         ( PlayModel model, PageMsg (PlayMsg msg) ) ->
-            case Play.update msg model of
-                Routes.Stay ( newModel, cmd ) ->
+            let (newModel, cmd) = Play.update msg model
+            in
                     ( { metaModel | pageModel = PlayModel newModel }, Cmd.map (PageMsg << PlayMsg) cmd )
-
-                Routes.Escape route ->
-                    ( metaModel, Nav.pushUrl metaModel.navKey (Routes.toNavString route) )
 
         ( _, UrlRequested request ) ->
             Debug.todo <| "not sure what to do with url request: " ++ Debug.toString request
