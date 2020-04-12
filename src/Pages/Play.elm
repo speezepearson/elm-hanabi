@@ -255,8 +255,31 @@ cardKey { color, rank } =
 viewHands : Player -> Bool -> History -> Html Msg
 viewHands player interactive history =
     let
+        game =
+            run history
         active =
-            currentPlayer (run history)
+            currentPlayer game
+
+        gameWillEndSoon : Bool
+        gameWillEndSoon =
+            List.length game.deck < 12
+
+        lastPlayerIsCertain : Bool
+        lastPlayerIsCertain =
+            game.movesLeft /= Nothing
+
+        expectedLastPlayer : Player
+        expectedLastPlayer =
+            let
+                nCards = List.length game.deck
+                nPlayers = List.length game.players
+                movesLeft = case game.movesLeft of
+                    Just n -> n
+                    Nothing -> nCards + nPlayers
+            in
+                case game.players |> List.drop (modBy nPlayers (movesLeft-1)) |> List.head of
+                    Nothing -> Debug.todo "impossible"
+                    Just p -> p
 
         headers =
             history.init.players
@@ -264,13 +287,9 @@ viewHands player interactive history =
                     (\p ->
                         th []
                             [ text p
-                            , text
-                                (if p == active then
-                                    " (active)"
-
-                                 else
-                                    ""
-                                )
+                            , if p == active
+                                then text " (active)"
+                                else text ""
                             ]
                     )
 
@@ -291,9 +310,16 @@ viewHands player interactive history =
                             ]
                     )
     in
-    table [ Attrs.attribute "border" "1px solid black" ]
-        [ tr [] headers
-        , tr [] cells
+    div []
+        [ table [ Attrs.attribute "border" "1px solid black" ]
+            [ tr [] headers
+            , tr [] cells
+            ]
+        , if gameWillEndSoon && not (isOver game)
+            then if lastPlayerIsCertain
+                then text <| expectedLastPlayer ++ " will make the last move."
+                else text <| "Game ends one round after last card is drawn. " ++ expectedLastPlayer ++ " will make the last move if everybody Plays or Discards. Each Hint delays the end by 1 move."
+            else text ""
         ]
 
 
