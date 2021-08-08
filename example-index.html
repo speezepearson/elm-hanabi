@@ -9,10 +9,25 @@
 
 <body>
   <script type="text/javascript">
-    Elm.Main.init({
+    var notificationsEnabled = (Notification.permission === "granted");
+    var app = Elm.Main.init({
       flags: {
           stateServerRoot: "http://localhost:38383", // replace this URL with your own stateserver's
+          notificationsEnabled,
       },
+    });
+    app.ports.notify.subscribe(msg => {
+      new Notification(msg);
+    });
+    app.ports.enableNotifications.subscribe(() => {
+      if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification('Notifications enabled!');
+            app.ports.notificationsEnabled.send(null);
+          }
+        });
+      }
     });
   </script>
 </body>

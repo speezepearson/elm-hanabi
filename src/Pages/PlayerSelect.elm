@@ -4,6 +4,7 @@ module Pages.PlayerSelect exposing
     , init
     , update
     , view
+    , subscriptions
     )
 
 import Browser.Navigation as Nav
@@ -95,3 +96,7 @@ view model =
                             |> List.intersperse (text " or ")
                        )
                 )
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none

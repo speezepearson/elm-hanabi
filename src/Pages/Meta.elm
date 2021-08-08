@@ -161,6 +161,13 @@ updatePage pageModel pageMsg =
                 Debug.log ("...in state: " ++ Debug.toString pageModel) <|
                     ( pageModel, Cmd.none )
 
+subscriptions : Model -> Sub PageMsg
+subscriptions model =
+    case model.pageModel of
+        HomeModel m -> Home.subscriptions m |> Sub.map HomeMsg
+        PlayerSelectModel m -> PlayerSelect.subscriptions m |> Sub.map PlayerSelectMsg
+        PlayModel m -> Play.subscriptions m |> Sub.map PlayMsg
+
 main =
     Browser.application
         { init = init

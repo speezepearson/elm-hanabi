@@ -1,9 +1,10 @@
-module Pages.Play exposing
+port module Pages.Play exposing
     ( Model
     , Msg(..)
     , init
     , update
     , view
+    , subscriptions
     )
 
 import Browser.Navigation as Nav
@@ -20,6 +21,9 @@ import Http
 import Pages.Routes as Routes exposing (PlayPageFlags)
 import StateServer as SS
 
+port enableNotifications : () -> Cmd msg
+port notificationsEnabled : (() -> msg) -> Sub msg
+port notify : String -> Cmd msg
 
 type alias Model =
     { flags : Flags
@@ -29,6 +33,7 @@ type alias Model =
     , freezeFrame : Maybe TimeStep
     , polling : Bool
     , navKey : Nav.Key
+    , notificationsEnabled : Bool
     }
 
 
@@ -38,6 +43,8 @@ type Msg
     | LoadedGame (Result Http.Error (Maybe History))
     | MadeMove
     | Poll
+    | EnableNotifications
+    | NotificationsEnabled
 
 
 init : Flags -> Nav.Key -> PlayPageFlags -> ( Model, Cmd Msg )
@@ -49,6 +56,7 @@ init flags key pageFlags =
       , freezeFrame = Nothing
       , polling = True
       , navKey = key
+      , notificationsEnabled = flags.notificationsEnabled
       }
     , SS.get LoadedGame (conn flags.stateServerRoot pageFlags.gameId)
     )
@@ -63,7 +71,10 @@ update msg model =
     case msg of
         LoadedGame (Ok (Just history)) ->
                 ( { model | history = Just history }
-                , SS.poll LoadedGame connection (Just history)
+                , Cmd.batch
+                  [ SS.poll LoadedGame connection (Just history)
+                  , if currentPlayer (run history) == model.player then notify "Your turn!" else Cmd.none
+                  ]
                 )
 
         LoadedGame (Ok Nothing) ->
@@ -101,6 +112,16 @@ update msg model =
         Poll ->
                 ( { model | polling = True }
                 , SS.poll LoadedGame connection model.history
+                )
+
+        EnableNotifications ->
+                ( model
+                , enableNotifications ()
+                )
+
+        NotificationsEnabled ->
+                ( { model | notificationsEnabled = True }
+                , Cmd.none
                 )
 
 
@@ -141,6 +162,10 @@ view model =
 
                       else
                         retryButton
+                    , if model.notificationsEnabled then
+                        text ""
+                      else
+                        button [ style "background-color" "red", onClick EnableNotifications ] [ text "Enable notifications" ]
                     ]
                 , viewGame (model.polling && not (isOver game) && (model.freezeFrame == Nothing) && model.player == currentPlayer game) model.player effectiveHistory
                 , text "Moves:"
@@ -451,3 +476,7 @@ viewCardCountingTable cards =
             )
         |> (::) (tr [] <| td [] [] :: (ranks |> List.map (\r -> td [] [ b [] [ text <| String.fromInt <| r ] ])))
         |> table []
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    notificationsEnabled (\() -> NotificationsEnabled)

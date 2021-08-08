@@ -4,6 +4,7 @@ module Pages.Home exposing
     , init
     , update
     , view
+    , subscriptions
     )
 
 import Browser.Navigation as Nav
@@ -118,3 +119,7 @@ view model =
             []
         , button [ onClick Create, disabled model.working ] [ text "Create" ]
         ]
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
