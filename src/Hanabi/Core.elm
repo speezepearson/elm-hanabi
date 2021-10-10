@@ -61,10 +61,10 @@ ranks =
 posns : Int -> List CardPosition
 posns nPlayers =
     if nPlayers < 4 then
-        [ "left", "midleft", "center", "midright", "right" ]
+        [ "top", "midtop", "middle", "midbottom", "bottom" ]
 
     else
-        [ "left", "midleft", "midright", "right" ]
+        [ "top", "midtop", "midbottom", "bottom" ]
 
 
 rankMultiplicities : Dict.Dict Rank Int
